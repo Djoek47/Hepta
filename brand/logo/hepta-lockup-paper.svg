@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120"><g transform="translate(12 12) scale(0.96)"><g fill="none" stroke-linecap="round"><path d="M35.5 10.6 A42 42 0 0 1 64.5 10.6" stroke="#E8442A" stroke-width="7"/>
+<path d="M71.8 14.1 A42 42 0 0 1 89.9 36.8" stroke="#0E0F0C" stroke-width="5.5"/>
+<path d="M91.7 44.6 A42 42 0 0 1 85.2 72.9" stroke="#0E0F0C" stroke-width="4" opacity=".55"/>
+<path d="M80.2 79.2 A42 42 0 0 1 54.0 91.8" stroke="#0E0F0C" stroke-width="6"/>
+<path d="M46.0 91.8 A42 42 0 0 1 19.8 79.2" stroke="#0E0F0C" stroke-width="4" opacity=".55"/>
+<path d="M14.8 72.9 A42 42 0 0 1 8.3 44.6" stroke="#0E0F0C" stroke-width="3" opacity=".35"/>
+<path d="M10.1 36.8 A42 42 0 0 1 28.2 14.1" stroke="#0E0F0C" stroke-width="5"/>
+<path d="M34.5 23.2 A31 31 0 0 1 65.5 23.2" stroke="#E8442A" stroke-width="5" opacity=".75"/>
+<path d="M40.8 31.1 A21 21 0 0 1 59.2 31.1" stroke="#E8442A" stroke-width="4.5" opacity=".5"/></g><circle cx="50" cy="50" r="8" fill="#0E0F0C"/></g><text x="132" y="84" font-family="Sora, Hanken Grotesk, Arial, sans-serif" font-weight="700" font-size="72" letter-spacing="-2.5" fill="#0E0F0C">Hepta</text></svg>

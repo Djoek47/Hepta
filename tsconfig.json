@@ -14,9 +14,11 @@
       "@intermenu/aiuic-core": ["./packages/core/src/index.ts"],
       "@intermenu/aiuic-resolve": ["./packages/resolve/src/index.ts"],
       "@intermenu/aiuic-memory": ["./packages/memory/src/index.ts"],
+      "@intermenu/hepta/lines": ["./packages/hepta/src/lines.ts"],
       "@intermenu/hepta": ["./packages/hepta/src/index.ts"],
-      "@intermenu/aiuic-pyramid": ["./packages/pyramid/src/index.ts"]
+      "@intermenu/aiuic-pyramid": ["./packages/pyramid/src/index.ts"],
+      "@hepta/listen": ["./packages/listen/src/index.ts"]
     }
   },
-  "include": ["packages/core/src", "packages/resolve/src", "packages/memory/src", "packages/hepta/src", "packages/pyramid/src"]
+  "include": ["packages/core/src", "packages/resolve/src", "packages/memory/src", "packages/hepta/src", "packages/pyramid/src", "packages/listen/src", "packages/listen/test", "bench/src", "bench/test", "bench/bench.ts"]
 }

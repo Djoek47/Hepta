@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "for p in core resolve memory hepta pyramid; do npx tsc --noEmit -p packages/$p/tsconfig.json || exit 1; done",
-    "hepta": "esbuild packages/hepta/run.ts --bundle --format=esm --platform=node --outfile=.hepta.mjs --log-level=error --alias:@intermenu/aiuic-core=./packages/core/src/index.ts --alias:@intermenu/aiuic-resolve=./packages/resolve/src/index.ts && node .hepta.mjs"
+    "typecheck": "for p in core resolve memory hepta pyramid; do npx tsc --noEmit -p packages/$p/tsconfig.json || exit 1; done && npx tsc --noEmit -p tsconfig.json",
+    "hepta": "esbuild packages/hepta/run.ts --bundle --format=esm --platform=node --outfile=.hepta.mjs --log-level=error --alias:@intermenu/aiuic-core=./packages/core/src/index.ts --alias:@intermenu/aiuic-resolve=./packages/resolve/src/index.ts && node .hepta.mjs",
+    "bench": "esbuild bench/bench.ts --bundle --format=esm --platform=node --packages=external --alias:@intermenu/aiuic-core=./packages/core/src/index.ts --alias:@intermenu/aiuic-resolve=./packages/resolve/src/index.ts --alias:@intermenu/aiuic-memory=./packages/memory/src/index.ts --alias:@intermenu/hepta/lines=./packages/hepta/src/lines.ts --alias:@intermenu/hepta=./packages/hepta/src/index.ts --alias:@intermenu/aiuic-pyramid=./packages/pyramid/src/index.ts --alias:@hepta/listen=./packages/listen/src/index.ts --outfile=.bench.mjs --log-level=error && node .bench.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -15,8 +16,13 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.2",
     "esbuild": "^0.24.2",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.5.0",
+    "ws": "^8.22.1"
   }
 }

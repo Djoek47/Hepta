@@ -14,8 +14,10 @@ export default defineConfig({
       '@intermenu/aiuic-core': at('./packages/core/src/index.ts'),
       '@intermenu/aiuic-resolve': at('./packages/resolve/src/index.ts'),
       '@intermenu/aiuic-memory': at('./packages/memory/src/index.ts'),
+      '@intermenu/hepta/lines': at('./packages/hepta/src/lines.ts'),
       '@intermenu/hepta': at('./packages/hepta/src/index.ts'),
       '@intermenu/aiuic-pyramid': at('./packages/pyramid/src/index.ts'),
+      '@hepta/listen': at('./packages/listen/src/index.ts'),
     },
   },
   test: {

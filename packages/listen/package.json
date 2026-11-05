@@ -1,0 +1,9 @@
+{
+  "name": "@hepta/listen",
+  "version": "0.1.0",
+  "description": "Hepta Listen: hears who is speaking, follows the subject, notices when someone changes it, and knows when to answer.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "license": "UNLICENSED",
+  "private": true
+}
