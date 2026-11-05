@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.hepta.mjs
+.bench.mjs
+.env
+.env.*
+!.env.example
+*.key
+bench/out/
+bench/clips/*/audio.*
+!bench/clips/*/audio.md
+exports/

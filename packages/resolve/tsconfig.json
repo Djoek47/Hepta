@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "@intermenu/aiuic-core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@intermenu/aiuic-core": ["./packages/core/src/index.ts"],
+      "@intermenu/aiuic-resolve": ["./packages/resolve/src/index.ts"],
+      "@intermenu/aiuic-memory": ["./packages/memory/src/index.ts"],
+      "@intermenu/hepta": ["./packages/hepta/src/index.ts"],
+      "@intermenu/aiuic-pyramid": ["./packages/pyramid/src/index.ts"]
+    }
+  },
+  "include": ["packages/core/src", "packages/resolve/src", "packages/memory/src", "packages/hepta/src", "packages/pyramid/src"]
+}

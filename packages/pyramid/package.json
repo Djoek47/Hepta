@@ -1,0 +1,11 @@
+{
+  "name": "@intermenu/aiuic-pyramid",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": { "typecheck": "tsc --noEmit -p tsconfig.json", "test": "vitest run" },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": { "typescript": "^5.6.3", "vitest": "^2.1.8" }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@intermenu/aiuic-resolve",
+  "version": "0.2.0",
+  "description": "Act routing and slot matching. Local matcher first, Jev second, LLM last.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
