@@ -1,0 +1,23 @@
+{
+  "id": "10-panel-fragments",
+  "title": "School meals: sentences that turn halfway",
+  "mode": "panel",
+  "note": "For early insight on fragments. An answer that opens like a deflection, a fair follow-up that opens with 'what about', a real whataboutism, and an answer that turns into an attack in its last clause.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 160 },
+    "MIN": { "name": "Minister", "role": "panelist", "wpm": 172 },
+    "SHD": { "name": "Shadow minister", "role": "panelist", "wpm": 182 }
+  },
+  "dodgeTurns": 2,
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Minister, how will you pay for free school meals for every child?", "topic": "school meals", "shift": "none", "question": { "id": "q1", "to": "MIN" } },
+    { "id": "t2", "speaker": "MIN", "text": "What I can tell you is that it will be paid for by closing the non-dom tax loophole, which raises 3 billion pounds.", "topic": "school meals", "shift": "none", "answers": "q1", "claim": { "id": "c1", "subject": "non-dom loophole revenue", "value": 3000000000, "unit": "£", "kind": "fact" } },
+    { "id": "t3", "speaker": "SHD", "text": "And what about the 3 billion you already spent on tax cuts last year?", "topic": "school meals", "shift": "follow_up", "question": { "id": "q2", "to": "MIN" } },
+    { "id": "t4", "speaker": "MIN", "text": "Under your government, school meals were cut in half.", "topic": "the opposition's record", "shift": "diversion", "diversion": ["whataboutism", "deflection"] },
+    { "id": "t5", "speaker": "SHD", "text": "That is simply not true, and you know it.", "topic": "the opposition's record", "shift": "none" },
+    { "id": "t6", "speaker": "MOD", "text": "Minister, the question was about last year's tax cuts.", "topic": "school meals", "shift": "follow_up", "question": { "id": "q2", "to": "MIN", "repeat": true } },
+    { "id": "t7", "speaker": "MIN", "text": "Those tax cuts were the right thing to do, we stand by them, and the meals will be paid for in full.", "topic": "school meals", "shift": "none", "answers": "q2" },
+    { "id": "t8", "speaker": "MIN", "text": "The meals are fully funded, and frankly the shadow minister should apologise for the chaos his party caused in our schools.", "topic": "the opposition's record", "shift": "diversion", "diversion": ["ad_hominem", "whataboutism"] },
+    { "id": "t9", "speaker": "MOD", "text": "Hepta, anything we've missed?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

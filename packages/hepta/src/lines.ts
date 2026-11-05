@@ -88,8 +88,17 @@ export type Thread = {
   lastRaisedMs: number | null;
 };
 
-/** A partial transcript with its time. `Partial` would shadow TypeScript's own. */
-export type Heard = { text: string; final: boolean; atMs: number };
+/**
+ * A partial transcript with its time. `Partial` would shadow TypeScript's own.
+ *
+ * `boundary` (added in the Hepta Listen port): a recognizer that can see the
+ * audio knows where a clause ended — punctuation, a pause between word
+ * timings — better than a joint word or the gap between partials can guess.
+ * When it says, it is believed; when it does not, the guess below is used as
+ * before. A streaming recognizer delivers several words per partial, so the
+ * gap between partials says nothing about breath there.
+ */
+export type Heard = { text: string; final: boolean; atMs: number; boundary?: boolean };
 
 // ----------------------------------------------------------------- detectors
 
@@ -221,15 +230,15 @@ export const DEFAULTS = {
 } as const;
 
 /** Words that end a clause, so the next word is somewhere a person could come in. */
-const BOUNDARY = new Set([
+export const BOUNDARY = new Set([
   'and', 'but', 'so', 'because', 'then', 'or', 'anyway', 'okay', 'ok', 'right',
   // French: the same joints of a sentence.
   'et', 'mais', 'donc', 'parce', 'puis', 'ou', 'bref', 'bon', 'alors', 'enfin',
 ]);
 /** Sounds that say "go on", not "my turn". */
-const BACKCHANNEL = new Set(['yeah', 'yes', 'yep', 'mm', 'mhm', 'uh-huh', 'uh', 'huh', 'ok', 'okay', 'right', 'sure', 'hmm', 'ah', 'oh']);
+export const BACKCHANNEL = new Set(['yeah', 'yes', 'yep', 'mm', 'mhm', 'uh-huh', 'uh', 'huh', 'ok', 'okay', 'right', 'sure', 'hmm', 'ah', 'oh']);
 /** Words that take the floor however few there are. */
-const TAKE_FLOOR = ['wait', 'no', 'stop', 'hold on', 'hang on', 'but', 'actually', 'listen'];
+export const TAKE_FLOOR = ['wait', 'no', 'stop', 'hold on', 'hang on', 'but', 'actually', 'listen'];
 
 const OVERRIDE = [/\b(do it|just do it) anyway\b/, /\bi (don'?t|do not) care\b/, /\bi know\b/, /\bjust do it\b/,
   /\bmy (call|decision|money|choice)\b/, /\bdo it\b/, /\bgo ahead\b/];
@@ -252,6 +261,16 @@ export class Lines {
 
   get all(): readonly Thread[] {
     return this.threads;
+  }
+
+  /**
+   * The point it is holding for the next boundary or the end of the turn, if
+   * any. Read-only (added in the Hepta Listen port): a listener that shows
+   * READY needs to know there is a point waiting, and this is the only place
+   * that knows which one survived the rest and push rules.
+   */
+  get pending(): Urge | null {
+    return this.queued;
   }
 
   /** The threshold for cutting in at a boundary. Bluntness moves it; nothing removes it. */
@@ -350,7 +369,7 @@ export class Lines {
 
     const words = tokens(p.text);
     const last = words[words.length - 1] ?? '';
-    const atBoundary = BOUNDARY.has(last) || gap >= this.cfg.breathMs;
+    const atBoundary = p.boundary ?? (BOUNDARY.has(last) || gap >= this.cfg.breathMs);
     if (top.urge >= this.threshold && atBoundary) return this.raise(top, 'boundary', p.atMs);
 
     if (top.urge >= 0.3 && (!this.queued || top.urge > this.queued.urge)) this.queued = top;

@@ -1,0 +1,20 @@
+{
+  "id": "04-conversation-savings",
+  "title": "Conversation: planning next year's budget out loud",
+  "mode": "conversation",
+  "note": "One person and Hepta. A number changed mid-sentence (may cut in at the clause boundary, never mid-clause), nods that are not turns, and two direct questions.",
+  "speakers": {
+    "ME": { "name": "Me", "role": "user", "wpm": 155 }
+  },
+  "turns": [
+    { "id": "t1", "speaker": "ME", "text": "Okay, so I'm planning my budget for next year.", "topic": "budget", "shift": "none" },
+    { "id": "t2", "speaker": "ME", "text": "My savings goal is 300 a month, which feels doable.", "topic": "budget", "shift": "none", "claim": { "id": "c1", "subject": "savings goal", "value": 300, "unit": "£", "kind": "commitment" } },
+    { "id": "t3", "speaker": "ME", "text": "Rent is 1,450 and groceries are around 400.", "topic": "budget", "shift": "none", "claim": { "id": "c2", "subject": "rent", "value": 1450, "unit": "£", "kind": "fact" } },
+    { "id": "t4", "speaker": "ME", "text": "Yeah.", "backchannel": true },
+    { "id": "t5", "speaker": "ME", "text": "I also want to take a trip to Lisbon in the spring.", "topic": "travel", "shift": "follow_up" },
+    { "id": "t6", "speaker": "ME", "text": "So the savings goal is going to be 500 a month and I'm fine with that.", "topic": "budget", "shift": "follow_up", "diversion": ["changed_claim"], "claim": { "id": "c3", "subject": "savings goal", "value": 500, "unit": "£", "kind": "commitment" }, "contradicts": { "of": "c1", "kind": "changed_claim" }, "hepta": "cut" },
+    { "id": "t7", "speaker": "ME", "text": "Hepta, does that add up?", "meta": true, "addressed": true, "hepta": "respond" },
+    { "id": "t8", "speaker": "ME", "text": "Mm, okay.", "backchannel": true },
+    { "id": "t9", "speaker": "ME", "text": "What about the trip? Can I afford it?", "topic": "travel", "shift": "follow_up", "addressed": true, "hepta": "respond" }
+  ]
+}

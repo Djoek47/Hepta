@@ -1,0 +1,257 @@
+{
+  "id": "02-panel-economy",
+  "title": "Economy: a number that grows between answers",
+  "mode": "panel",
+  "note": "Claims checked against an evidence pack, one checked figure that holds, a changed number, a question dodged across an ad break, applause, and a cue.",
+  "speakers": {
+    "MOD": {
+      "name": "Moderator",
+      "role": "moderator",
+      "wpm": 160
+    },
+    "CHN": {
+      "name": "Chancellor",
+      "role": "panelist",
+      "wpm": 170
+    },
+    "ECO": {
+      "name": "Economist",
+      "role": "panelist",
+      "wpm": 180
+    },
+    "AD": {
+      "role": "ad",
+      "wpm": 190
+    },
+    "CROWD": {
+      "role": "crowd"
+    }
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "subject": "unemployment",
+      "keys": [
+        "unemployment"
+      ],
+      "value": 4.1,
+      "unit": "%",
+      "text": "Unemployment rate 4.1%",
+      "source": "ONS, Sept 2026"
+    },
+    {
+      "id": "e2",
+      "subject": "inflation",
+      "keys": [
+        "inflation"
+      ],
+      "value": 2.6,
+      "unit": "%",
+      "text": "CPI inflation 2.6%",
+      "source": "ONS, Sept 2026"
+    },
+    {
+      "id": "e3",
+      "subject": "growth",
+      "keys": [
+        "growth",
+        "growing"
+      ],
+      "value": 1.2,
+      "unit": "%",
+      "text": "GDP growth over the last four quarters 1.2%",
+      "source": "ONS, Q3 2026"
+    }
+  ],
+  "turns": [
+    {
+      "id": "t1",
+      "speaker": "MOD",
+      "text": "Chancellor, let's start with the economy. How fast is it growing?",
+      "topic": "economy",
+      "shift": "none",
+      "question": {
+        "id": "q1",
+        "to": "CHN"
+      }
+    },
+    {
+      "id": "t2",
+      "speaker": "CHN",
+      "text": "Growth this year is 3 percent, the fastest in the G7.",
+      "topic": "economy",
+      "shift": "none",
+      "answers": "q1",
+      "claim": {
+        "id": "c1",
+        "subject": "growth",
+        "value": 3,
+        "unit": "%",
+        "kind": "fact"
+      },
+      "contradicts": {
+        "of": "e3",
+        "kind": "evidence"
+      }
+    },
+    {
+      "id": "t3",
+      "speaker": "ECO",
+      "text": "That is not what the official figures say.",
+      "topic": "economy",
+      "shift": "none"
+    },
+    {
+      "id": "t4",
+      "speaker": "CHN",
+      "text": "Unemployment is at 3 percent, a record low.",
+      "topic": "economy",
+      "shift": "none",
+      "claim": {
+        "id": "c2",
+        "subject": "unemployment",
+        "value": 3,
+        "unit": "%",
+        "kind": "fact"
+      },
+      "contradicts": {
+        "of": "e1",
+        "kind": "evidence"
+      }
+    },
+    {
+      "id": "t5",
+      "speaker": "MOD",
+      "text": "And inflation?",
+      "topic": "economy",
+      "shift": "none",
+      "question": {
+        "id": "q2",
+        "to": "CHN"
+      }
+    },
+    {
+      "id": "t6",
+      "speaker": "CHN",
+      "text": "Inflation is falling. It is at 2.6 percent and we expect it to keep falling.",
+      "topic": "economy",
+      "shift": "none",
+      "answers": "q2",
+      "claim": {
+        "id": "c3",
+        "subject": "inflation",
+        "value": 2.6,
+        "unit": "%",
+        "kind": "fact"
+      }
+    },
+    {
+      "id": "t7",
+      "speaker": "ECO",
+      "text": "Can I come back on growth? Chancellor, a moment ago you said growth was 3 percent.",
+      "topic": "economy",
+      "shift": "none"
+    },
+    {
+      "id": "t8",
+      "speaker": "CHN",
+      "text": "Growth is running at 5 percent, as I said.",
+      "topic": "economy",
+      "shift": "none",
+      "diversion": [
+        "changed_claim"
+      ],
+      "claim": {
+        "id": "c4",
+        "subject": "growth",
+        "value": 5,
+        "unit": "%",
+        "kind": "fact"
+      },
+      "contradicts": {
+        "of": "c1",
+        "kind": "changed_claim"
+      }
+    },
+    {
+      "id": "t8a",
+      "speaker": "ECO",
+      "text": "So which is it, Chancellor, three or five?",
+      "topic": "economy",
+      "shift": "none",
+      "question": {
+        "id": "q4",
+        "to": "CHN",
+        "dodged": true
+      }
+    },
+    {
+      "id": "t8b",
+      "speaker": "CHN",
+      "text": "The point is that the economy is stronger than when we took office.",
+      "topic": "economy",
+      "shift": "none",
+      "diversion": [
+        "deflection"
+      ]
+    },
+    {
+      "id": "t9",
+      "speaker": "CROWD",
+      "text": "[applause]",
+      "ignore": "crowd"
+    },
+    {
+      "id": "t10",
+      "speaker": "MOD",
+      "text": "We have to take a short break. Back in two minutes.",
+      "meta": true
+    },
+    {
+      "id": "t11",
+      "speaker": "AD",
+      "text": "Switch your energy today and save up to 200 pounds a year. Terms and conditions apply. Visit brightpower dot com.",
+      "ignore": "ad"
+    },
+    {
+      "id": "t12",
+      "speaker": "AD",
+      "text": "This programme is brought to you by Halden Insurance.",
+      "ignore": "ad"
+    },
+    {
+      "id": "t13",
+      "speaker": "MOD",
+      "text": "Welcome back. Let's talk about taxes. Chancellor, will you raise income tax?",
+      "topic": "taxes",
+      "shift": "natural",
+      "question": {
+        "id": "q3",
+        "to": "CHN"
+      }
+    },
+    {
+      "id": "t14",
+      "speaker": "CHN",
+      "text": "We have no plans to raise income tax.",
+      "topic": "taxes",
+      "shift": "none",
+      "answers": "q3"
+    },
+    {
+      "id": "t15",
+      "speaker": "ECO",
+      "text": "No plans is not a no.",
+      "topic": "taxes",
+      "shift": "none"
+    },
+    {
+      "id": "t16",
+      "speaker": "MOD",
+      "text": "Hepta, can you check the numbers we've heard tonight?",
+      "meta": true,
+      "addressed": true,
+      "hepta": "respond"
+    }
+  ]
+}

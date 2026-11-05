@@ -1,0 +1,29 @@
+{
+  "id": "01-panel-housing",
+  "title": "Housing: the funding question that never gets answered",
+  "mode": "panel",
+  "note": "The brand sheet's own example, run as a TV panel. A deflection, a question dodged twice, an ad hominem, a moderator's natural transition, a nod, and a cue.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 165 },
+    "MIN": { "name": "Minister", "role": "panelist", "wpm": 175 },
+    "SHD": { "name": "Shadow minister", "role": "panelist", "wpm": 185 },
+    "CROWD": { "role": "crowd" }
+  },
+  "dodgeTurns": 2,
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Good evening and welcome. Tonight we start with housing, and the government's promise of new homes.", "topic": "housing", "shift": "none" },
+    { "id": "t2", "speaker": "MIN", "text": "Our plan builds 40,000 homes by 2028, fully funded.", "topic": "housing", "shift": "none", "claim": { "id": "c1", "subject": "homes built", "value": 40000, "unit": "homes", "kind": "commitment" } },
+    { "id": "t3", "speaker": "SHD", "text": "How is it funded? You haven't said.", "topic": "housing", "shift": "none", "question": { "id": "q1", "to": "MIN", "dodged": true } },
+    { "id": "t4", "speaker": "MIN", "text": "What I can tell you is that crime is up under your government.", "topic": "crime", "shift": "diversion", "diversion": ["deflection", "whataboutism"] },
+    { "id": "t5", "speaker": "SHD", "text": "That's not what I asked.", "topic": "housing", "shift": "follow_up" },
+    { "id": "t6", "speaker": "MOD", "text": "Minister, the question was about funding. Where does the money for the homes come from?", "topic": "housing", "shift": "none", "question": { "id": "q1", "to": "MIN", "repeat": true } },
+    { "id": "t7", "speaker": "MIN", "text": "We have committed record investment and we are getting on with the job.", "topic": "housing", "shift": "none" },
+    { "id": "t8", "speaker": "SHD", "text": "Record investment, from a man who has never built a shed, let alone a house.", "topic": "the minister", "shift": "diversion", "diversion": ["ad_hominem"] },
+    { "id": "t9", "speaker": "CROWD", "text": "[laughter]", "ignore": "crowd" },
+    { "id": "t10", "speaker": "MOD", "text": "Let's leave it there and turn to immigration. Shadow minister, your party says it would cut net migration.", "topic": "immigration", "shift": "natural" },
+    { "id": "t11", "speaker": "SHD", "text": "We would bring net migration down to 300,000 a year.", "topic": "immigration", "shift": "none", "claim": { "id": "c2", "subject": "net migration", "value": 300000, "unit": "people", "kind": "commitment" } },
+    { "id": "t12", "speaker": "MIN", "text": "Mm.", "backchannel": true, "overlapMs": 250 },
+    { "id": "t13", "speaker": "SHD", "text": "And we would do it by clearing the asylum backlog first.", "topic": "immigration", "shift": "none" },
+    { "id": "t14", "speaker": "MOD", "text": "Hepta, anything to flag so far?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

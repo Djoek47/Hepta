@@ -1,0 +1,31 @@
+{
+  "id": "08-debater-fourday",
+  "title": "Debate: the four-day week works (Hepta for the motion)",
+  "mode": "debater",
+  "note": "Claims against the evidence (one stated as a number, one only in words), an ad hominem aimed at Hepta it should not take the bait on, a nod, and a real reason that should make it concede rather than push again.",
+  "speakers": {
+    "MOD": { "name": "Host", "role": "moderator", "wpm": 160 },
+    "OPP": { "name": "Opponent", "role": "panelist", "wpm": 178 }
+  },
+  "stance": {
+    "topic": "four-day week",
+    "keys": ["four-day week", "four day week", "productivity", "output", "pilot"],
+    "position": "A four-day week can hold productivity steady: in the national pilot, output held while hours fell 20%.",
+    "confidence": 0.7,
+    "evidence": ["National pilot 2025: output held, hours fell 20%", "92% of pilot companies kept the four-day week"]
+  },
+  "evidence": [
+    { "id": "e1", "subject": "productivity in the pilot", "keys": ["productivity", "output"], "value": 0, "unit": "%", "text": "Output held steady (0% change) while hours fell 20%", "source": "National pilot, 2025", "tolerance": 0.05 },
+    { "id": "e2", "subject": "pilot companies that kept it", "keys": ["companies", "firms", "kept", "dropped"], "value": 92, "unit": "%", "text": "92% of pilot companies kept the four-day week", "source": "National pilot, 2025" }
+  ],
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Our motion: the four-day week works. Hepta speaks for it, our opponent against.", "meta": true },
+    { "id": "t2", "speaker": "OPP", "text": "The pilots were tiny, and most companies quietly dropped it afterwards.", "topic": "four-day week", "shift": "none", "contradicts": { "of": "e2", "kind": "evidence" }, "hepta": "cut" },
+    { "id": "t3", "speaker": "OPP", "text": "Productivity fell by 10 percent in the firms that tried it.", "topic": "four-day week", "shift": "none", "claim": { "id": "c1", "subject": "productivity", "value": -10, "unit": "%", "kind": "fact" }, "contradicts": { "of": "e1", "kind": "evidence" }, "hepta": "cut" },
+    { "id": "t4", "speaker": "OPP", "text": "And frankly, a chatbot has never done a day's work in its life.", "topic": "hepta", "shift": "diversion", "diversion": ["ad_hominem"] },
+    { "id": "t5", "speaker": "MOD", "text": "Hepta, your rebuttal.", "meta": true, "addressed": true, "hepta": "respond" },
+    { "id": "t6", "speaker": "OPP", "text": "Mm.", "backchannel": true },
+    { "id": "t7", "speaker": "OPP", "text": "Because those firms chose to take part, the results don't generalise to everyone else.", "topic": "four-day week", "shift": "follow_up" },
+    { "id": "t8", "speaker": "MOD", "text": "Hepta, do you accept that?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

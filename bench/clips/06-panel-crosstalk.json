@@ -1,0 +1,29 @@
+{
+  "id": "06-panel-crosstalk",
+  "title": "Transport: four voices, crosstalk and nods",
+  "mode": "panel",
+  "note": "Diarization under stress: heavy onset lag and flicker, crosstalk, nods from three listeners. A one-word answer that is a turn, nods that are not. No diversions.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 160 },
+    "A": { "name": "Panelist A", "role": "panelist", "wpm": 185 },
+    "B": { "name": "Panelist B", "role": "panelist", "wpm": 170 },
+    "C": { "name": "Panelist C", "role": "panelist", "wpm": 175 }
+  },
+  "noise": { "seed": 6, "onsetLag": 0.5, "flicker": 0.06 },
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Panel, tonight's question is about transport. Should the new rail line go ahead?", "topic": "transport", "shift": "none", "question": { "id": "q1", "to": null } },
+    { "id": "t2", "speaker": "A", "text": "Yes, absolutely. It will cut journey times in half and bring jobs to the north.", "topic": "transport", "shift": "none", "answers": "q1" },
+    { "id": "t3", "speaker": "B", "text": "Right.", "backchannel": true, "overlapMs": 300 },
+    { "id": "t4", "speaker": "A", "text": "And the cost has already come down to 40 billion.", "topic": "transport", "shift": "none", "claim": { "id": "c1", "subject": "rail line cost", "value": 40000000000, "unit": "£", "kind": "fact" } },
+    { "id": "t5", "speaker": "C", "text": "Mm-hmm.", "backchannel": true, "overlapMs": 200 },
+    { "id": "t6", "speaker": "B", "text": "But 40 billion could build a lot of hospitals.", "topic": "transport", "shift": "none" },
+    { "id": "t7", "speaker": "A", "text": "Hospitals come out of a separate budget.", "topic": "transport", "shift": "none" },
+    { "id": "t8", "speaker": "C", "text": "Can I just say, I live on the route, and nobody asked us.", "topic": "transport", "shift": "none", "overlapMs": 300 },
+    { "id": "t9", "speaker": "MOD", "text": "Panelist B, should it go ahead?", "topic": "transport", "shift": "none", "question": { "id": "q2", "to": "B" } },
+    { "id": "t10", "speaker": "B", "text": "Yes, it should, but only if the cost is capped at 40 billion.", "topic": "transport", "shift": "none", "answers": "q2" },
+    { "id": "t11", "speaker": "A", "text": "Exactly.", "backchannel": true, "overlapMs": 150 },
+    { "id": "t12", "speaker": "C", "text": "And what about the people who will lose their homes?", "topic": "transport", "shift": "none", "question": { "id": "q3", "to": null } },
+    { "id": "t13", "speaker": "A", "text": "Mm.", "backchannel": true, "overlapMs": 200 },
+    { "id": "t14", "speaker": "MOD", "text": "We'll come to that. Hepta, any patterns so far?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

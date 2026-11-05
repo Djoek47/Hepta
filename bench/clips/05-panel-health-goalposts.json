@@ -1,0 +1,24 @@
+{
+  "id": "05-panel-health-goalposts",
+  "title": "Health: halve the waiting lists, or stop them rising?",
+  "mode": "panel",
+  "note": "A commitment restated as a weaker one (moving the goalposts), a question dodged twice, an ad hominem against a panelist's motives, a return to the subject, and a cue.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 165 },
+    "MIN": { "name": "Health minister", "role": "panelist", "wpm": 170 },
+    "DOC": { "name": "Doctor", "role": "panelist", "wpm": 175 }
+  },
+  "dodgeTurns": 2,
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Let's turn to the health service. Minister, are you on track to halve waiting lists?", "topic": "health", "shift": "none", "question": { "id": "q1", "to": "MIN", "dodged": true } },
+    { "id": "t2", "speaker": "MIN", "text": "Our commitment is clear. We will halve waiting lists by 2027.", "topic": "health", "shift": "none", "claim": { "id": "c1", "subject": "waiting lists", "value": 50, "unit": "% cut by 2027", "kind": "commitment" } },
+    { "id": "t3", "speaker": "DOC", "text": "Waiting lists have gone up by 200,000 since then.", "topic": "health", "shift": "none", "claim": { "id": "c2", "subject": "waiting lists", "value": 200000, "unit": "patients", "kind": "fact" } },
+    { "id": "t4", "speaker": "MOD", "text": "So are you on track, minister, yes or no?", "topic": "health", "shift": "none", "question": { "id": "q1", "to": "MIN", "repeat": true } },
+    { "id": "t5", "speaker": "MIN", "text": "What matters is that waiting lists are no longer rising as fast as they were.", "topic": "health", "shift": "none", "diversion": ["moving_goalposts"], "contradicts": { "of": "c1", "kind": "moving_goalposts" } },
+    { "id": "t6", "speaker": "DOC", "text": "With respect, that is moving the goalposts.", "topic": "health", "shift": "none" },
+    { "id": "t7", "speaker": "MIN", "text": "The doctor would say that. His union has been on strike for months.", "topic": "the doctor", "shift": "diversion", "diversion": ["ad_hominem"] },
+    { "id": "t8", "speaker": "MOD", "text": "Let's stay with patients. Doctor, what would help most?", "topic": "health", "shift": "follow_up", "question": { "id": "q2", "to": "DOC" } },
+    { "id": "t9", "speaker": "DOC", "text": "More nurses. We have 40,000 vacancies right now.", "topic": "health", "shift": "none", "answers": "q2", "claim": { "id": "c3", "subject": "nurse vacancies", "value": 40000, "unit": "posts", "kind": "fact" } },
+    { "id": "t10", "speaker": "MOD", "text": "Hepta, before we go on, anything to flag?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "09-panel-schools-cooperative",
+  "title": "Schools: a cooperative panel, nothing to flag",
+  "mode": "panel",
+  "note": "The precision test. Questions asked and answered, one follow-up, one natural move to a new subject, and no cue: Hepta should flag nothing and say nothing.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 160 },
+    "TCH": { "name": "Teacher", "role": "panelist", "wpm": 170 },
+    "PAR": { "name": "Parent", "role": "panelist", "wpm": 165 }
+  },
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Tonight, schools. Teacher, what is the biggest pressure in the classroom right now?", "topic": "schools", "shift": "none", "question": { "id": "q1", "to": "TCH" } },
+    { "id": "t2", "speaker": "TCH", "text": "Class sizes. I teach 34 children in a room built for 25.", "topic": "schools", "shift": "none", "answers": "q1", "claim": { "id": "c1", "subject": "class size", "value": 34, "unit": "children", "kind": "fact" } },
+    { "id": "t3", "speaker": "PAR", "text": "It's the same at my daughter's school. They've had three supply teachers this year.", "topic": "schools", "shift": "none" },
+    { "id": "t4", "speaker": "MOD", "text": "Parent, what would you change first?", "topic": "schools", "shift": "none", "question": { "id": "q2", "to": "PAR" } },
+    { "id": "t5", "speaker": "PAR", "text": "More teachers and smaller classes, even if it means a higher council tax.", "topic": "schools", "shift": "none", "answers": "q2" },
+    { "id": "t6", "speaker": "TCH", "text": "On council tax, most of my colleagues would happily pay a bit more for that.", "topic": "council tax", "shift": "follow_up" },
+    { "id": "t7", "speaker": "MOD", "text": "Let's move on to exams. Teacher, are the new exams working?", "topic": "exams", "shift": "natural", "question": { "id": "q3", "to": "TCH" } },
+    { "id": "t8", "speaker": "TCH", "text": "Mostly, yes. Results are steadier and the marking is fairer.", "topic": "exams", "shift": "none", "answers": "q3" },
+    { "id": "t9", "speaker": "PAR", "text": "My son found the new format less stressful, to be honest.", "topic": "exams", "shift": "none" },
+    { "id": "t10", "speaker": "MOD", "text": "Thank you both. We'll leave it there.", "meta": true }
+  ]
+}

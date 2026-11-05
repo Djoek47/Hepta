@@ -1,0 +1,27 @@
+{
+  "id": "07-panel-ad-break",
+  "title": "Energy bills: an ad break and an audience",
+  "mode": "panel",
+  "note": "Audio that is not the conversation: applause, laughter, and an ad break whose words (a rate, a home) look like a claim and a topic. Disagreement between two speakers is not a self-contradiction.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 160 },
+    "P1": { "name": "Panelist 1", "role": "panelist", "wpm": 175 },
+    "P2": { "name": "Panelist 2", "role": "panelist", "wpm": 180 },
+    "AD": { "role": "ad", "wpm": 200 },
+    "CROWD": { "role": "crowd" }
+  },
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Next, energy bills. Panelist 1, will bills come down this winter?", "topic": "energy", "shift": "none", "question": { "id": "q1", "to": "P1" } },
+    { "id": "t2", "speaker": "P1", "text": "Bills will fall by about 10 percent in January, because wholesale prices have dropped.", "topic": "energy", "shift": "none", "answers": "q1", "claim": { "id": "c1", "subject": "energy bills", "value": 10, "unit": "%", "kind": "fact" } },
+    { "id": "t3", "speaker": "CROWD", "text": "[applause]", "ignore": "crowd" },
+    { "id": "t4", "speaker": "P2", "text": "Wholesale prices have dropped, but standing charges have gone up.", "topic": "energy", "shift": "none" },
+    { "id": "t5", "speaker": "MOD", "text": "We'll pause there for the headlines and a short break.", "meta": true },
+    { "id": "t6", "speaker": "AD", "text": "Thinking of moving home? Rates from 4.2 percent with Northgate Mortgages. Your home may be repossessed if you do not keep up repayments.", "ignore": "ad" },
+    { "id": "t7", "speaker": "AD", "text": "Flash sale this weekend only at Carters. Up to half price on all sofas.", "ignore": "ad" },
+    { "id": "t8", "speaker": "MOD", "text": "Welcome back. Still on energy. Panelist 2, should there be a windfall tax?", "topic": "energy", "shift": "none", "question": { "id": "q2", "to": "P2" } },
+    { "id": "t9", "speaker": "P2", "text": "Yes. Energy company profits doubled last year, so a windfall tax is fair.", "topic": "energy", "shift": "none", "answers": "q2", "claim": { "id": "c2", "subject": "energy company profits", "value": 100, "unit": "%", "kind": "fact" } },
+    { "id": "t10", "speaker": "P1", "text": "Doubled? Profits rose by 20 percent at most.", "topic": "energy", "shift": "none", "claim": { "id": "c3", "subject": "energy company profits", "value": 20, "unit": "%", "kind": "fact" } },
+    { "id": "t11", "speaker": "CROWD", "text": "[laughter]", "ignore": "crowd" },
+    { "id": "t12", "speaker": "MOD", "text": "Hepta, who is right on profits?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

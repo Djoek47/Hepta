@@ -217,3 +217,26 @@ describe('the harder debate cases', () => {
     expect(cut?.heard.text).toMatch(/six hundred and fifty and$/);
   });
 });
+
+describe('port additions (Hepta Listen)', () => {
+  it('believes a recognizer that says the clause ended, and one that says it has not', () => {
+    const l = new Lines();
+    say(l, 'my grocery budget is 400', 0);
+    // A streaming recognizer: several words per partial, far apart in wall time.
+    expect(l.hear({ text: 'the grocery budget is 600', final: false, atMs: 60_000, boundary: false }).kind).toBe('listen');
+    // 2 s later, still mid-clause: the gap alone would have read as a breath.
+    expect(l.hear({ text: 'the grocery budget is 600 for the', final: false, atMs: 62_000, boundary: false }).kind).toBe('listen');
+    // The recognizer saw a comma and a pause.
+    expect(l.hear({ text: 'the grocery budget is 600 for the month,', final: false, atMs: 63_000, boundary: true }))
+      .toMatchObject({ kind: 'interrupt', at: 'boundary' });
+  });
+
+  it('shows the point it is holding, and lets it go once raised', () => {
+    const l = new Lines();
+    l.note({ kind: 'question', topic: 'the dentist', keys: ['dentist'], said: { text: 'when is the dentist', atMs: 0 } });
+    l.hear({ text: 'I need to call the dentist', final: false, atMs: 30_000 });
+    expect(l.pending?.reason).toBe('return');
+    l.hear({ text: 'I need to call the dentist tomorrow', final: true, atMs: 30_500 });
+    expect(l.pending).toBeNull();
+  });
+});

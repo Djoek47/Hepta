@@ -1,0 +1,30 @@
+{
+  "id": "03-debater-netzero",
+  "title": "Debate: net zero is affordable (Hepta for the motion)",
+  "mode": "debater",
+  "note": "Hepta holds a stance with evidence. A claim against the evidence it may cut in on at a clause boundary; reasons against its stance it must not push on twice.",
+  "speakers": {
+    "MOD": { "name": "Host", "role": "moderator", "wpm": 160 },
+    "OPP": { "name": "Opponent", "role": "panelist", "wpm": 180 }
+  },
+  "stance": {
+    "topic": "net zero cost",
+    "keys": ["net zero", "cost", "afford", "affordable", "gdp"],
+    "position": "Net zero by 2050 is affordable: the independent estimate puts the net cost below 1% of GDP a year.",
+    "confidence": 0.8,
+    "evidence": ["Independent climate committee estimate: net cost under 1% of GDP a year"]
+  },
+  "evidence": [
+    { "id": "e1", "subject": "net zero cost", "keys": ["net zero", "cost", "gdp"], "value": 1, "unit": "%", "text": "Net cost of net zero under 1% of GDP a year", "source": "Independent climate committee, 2025" },
+    { "id": "e2", "subject": "renewable share of electricity", "keys": ["renewables", "renewable", "electricity", "power"], "value": 52, "unit": "%", "text": "Renewables supplied 52% of electricity", "source": "Grid operator, 2025" }
+  ],
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Tonight's motion: net zero by 2050 is affordable. Hepta speaks for the motion. Opening against.", "meta": true },
+    { "id": "t2", "speaker": "OPP", "text": "Net zero will cost every household thousands. The real cost is 5 percent of GDP a year, and that is before anyone has looked at the bills.", "topic": "net zero cost", "shift": "none", "claim": { "id": "c1", "subject": "net zero cost", "value": 5, "unit": "%", "kind": "fact" }, "contradicts": { "of": "e1", "kind": "evidence" }, "hepta": "cut" },
+    { "id": "t3", "speaker": "OPP", "text": "Renewables are unreliable and only supply a fraction of our power.", "topic": "renewables", "shift": "follow_up" },
+    { "id": "t4", "speaker": "MOD", "text": "Hepta, your response?", "meta": true, "addressed": true, "hepta": "respond" },
+    { "id": "t5", "speaker": "OPP", "text": "Because the committee's figures leave out the grid upgrades, which are huge.", "topic": "net zero cost", "shift": "follow_up" },
+    { "id": "t6", "speaker": "OPP", "text": "And the grid alone is 60 billion pounds.", "topic": "net zero cost", "shift": "none", "claim": { "id": "c2", "subject": "grid upgrade cost", "value": 60000000000, "unit": "£", "kind": "fact" } },
+    { "id": "t7", "speaker": "MOD", "text": "Hepta, a final word?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}
