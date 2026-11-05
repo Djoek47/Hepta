@@ -17,3 +17,6 @@ exports/
 apps/studio/public/app.js
 .debug.mjs
 .e2e.mjs
+.draft.mjs
+bench/clips/*/.stt-*.json
+.report.mjs

@@ -8,6 +8,7 @@
  * rules do not change when the detector gets better.
  */
 import { atBoundary, BREATH_MS } from './boundary.js';
+import { HeuristicDetector } from './heuristic.js';
 import { mentionsHepta, addressesHepta } from './cues.js';
 import {
   diversionCard, dodgedCard, evidenceCard, quoteOf, quoteOfClaim, quoteOfQuestion, shiftCard, type Insight, type InsightKind,
@@ -35,6 +36,12 @@ export type ListenerOptions = {
   bluntness?: number;
   /** Writes response cards. The local template when omitted. */
   responder?: Responder;
+  /**
+   * Decides partials that are already stale — a newer partial of the same
+   * sentence is waiting — when the main detector needs the network. The latest
+   * partial and every final still go to the main detector. Local heuristics by default.
+   */
+  fastDetector?: Detector;
   /** Wall clock in ms, for latency. performance.now by default. */
   clock?: () => number;
 };
@@ -63,6 +70,12 @@ export class Listener {
   private readonly responder: Responder;
   private queue: Promise<unknown> = Promise.resolve();
   private seq = 0;
+  private enqueued = 0;
+  /** The newest chunk waiting for each utterance. */
+  private readonly newest = new Map<string, number>();
+  private readonly fast: Detector;
+  /** Partials decided by the fast detector because a newer one was already waiting. */
+  skipped = 0;
   private insightSeq = 0;
   private responseSeq = 0;
   /** A response held for the end of the speaker's turn. `speaking`: someone started talking since. */
@@ -79,6 +92,7 @@ export class Listener {
     this.memory = new Memory(opts.halfLifeMs, opts.dodgeTurns ?? 2);
     this.timing = new Timing(opts.mode, { ...(opts.stance ? { stance: opts.stance } : {}), ...(opts.turnEndMs !== undefined ? { turnEndMs: opts.turnEndMs } : {}), ...(opts.bluntness !== undefined ? { bluntness: opts.bluntness } : {}) });
     this.responder = opts.responder ?? new TemplateResponder();
+    this.fast = opts.fastDetector ?? (opts.detector.local ? opts.detector : new HeuristicDetector());
   }
 
   get detector(): Detector {
@@ -106,7 +120,9 @@ export class Listener {
 
   /** Chunks are decided in the order they arrive, whatever the detector's latency. */
   hear(chunk: SttChunk): Promise<JevDecision> {
-    const next = this.queue.then(() => this.decide(chunk));
+    const n = ++this.enqueued;
+    this.newest.set(chunk.utteranceId, n);
+    const next = this.queue.then(() => this.decide(chunk, n));
     this.queue = next.catch(() => undefined);
     return next;
   }
@@ -145,7 +161,7 @@ export class Listener {
     return d;
   }
 
-  private async decide(chunk: SttChunk): Promise<JevDecision> {
+  private async decide(chunk: SttChunk, n = 0): Promise<JevDecision> {
     const t0 = this.clock();
     const speaker = this.speakers.resolve(chunk);
     // Speech from someone else ends a held turn; more speech from the same person defers it
@@ -166,8 +182,13 @@ export class Listener {
 
     this.memory.bindNames(this.speakers.list());
     const state = this.memory.snapshot(this.mode, this.speakers.list(), heard.atMs, this.opts.evidence ?? [], this.opts.stance);
+    // A partial already overtaken by a newer one is not worth a network round trip.
+    const stale = !chunk.final && n > 0 && this.newest.get(chunk.utteranceId) !== n && !this.opts.detector.local;
+    if (stale) this.skipped++;
+    if (chunk.final) this.newest.delete(chunk.utteranceId);
+    const detector = stale ? this.fast : this.opts.detector;
     const d0 = this.clock();
-    const j = await this.opts.detector.detect(heard, state);
+    const j = await detector.detect(heard, state);
     const detectorMs = this.clock() - d0;
 
     const committed = heard.final ? this.memory.commit(heard, j) : undefined;
@@ -179,7 +200,7 @@ export class Listener {
       // After an attack, the subject it left is the one the conversation moves from.
       topic: j.topic, shiftType: j.shiftType, shiftFrom: state.current.about ? state.current.resume?.topic ?? state.current.topic : state.current.topic,
       addressedToHepta: j.addressedToHepta, respondState: 'listen', confidence: j.confidence,
-      latencyMs: 0, detectorMs, backend: this.opts.detector.name, provisional: !heard.final,
+      latencyMs: 0, detectorMs, backend: detector.name, provisional: !heard.final,
       boundary: heard.boundary, readings: j.readings, trigger: 'chunk',
       ...(j.ignore ? { ignored: j.ignore } : {}),
       ...(j.claim ? { claim: j.claim } : {}),

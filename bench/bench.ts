@@ -1,5 +1,6 @@
 /**
- * npm run bench [-- --backends heuristic,jev-haiku] [--clips 01,05] [--misses] [--no-names]
+ * npm run bench [-- --backends heuristic,jev-haiku] [--clips 01,05] [--misses] [--no-names] [--set holdout]
+ *                 [--stt deepgram|assemblyai] [--speed 1] [--fresh]   (recorded clips: real audio, real recognizer)
  *                 [--onset-lag 0.5] [--flicker 0.08] [--seed 7]   (harsher diarization)
  *
  * Plays every clip in bench/clips through the listener once per backend and
@@ -8,13 +9,15 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { claudeClient, HAIKU, haikuTransport, HeuristicDetector, JevDetector, SonnetResponder, TemplateResponder, type HaikuTiming } from '@hepta/listen';
+import { assemblyai, claudeClient, deepgram, HAIKU, haikuTransport, HeuristicDetector, JevDetector, SonnetResponder, TemplateResponder, type HaikuTiming, type SttProvider } from '@hepta/listen';
+import { alignTimeline, transcribe } from './src/recorded.js';
 import type { Clip } from './src/clip.js';
 import { emptyMetrics, merge, score } from './src/metrics.js';
 import { formatMarkdown, formatReport, type BackendResult } from './src/report.js';
 import { runClip, type Backend } from './src/run.js';
 
 loadEnv('.env');
+const dirs = new Map<string, string>();
 const args = process.argv.slice(2);
 const arg = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 const flag = (k: string) => args.includes(k);
@@ -51,12 +54,17 @@ for (const name of wanted) {
   const total = emptyMetrics();
   const perClip: BackendResult['perClip'] = [];
   for (const clip of clips) {
+    // A recorded clip goes through a real recognizer first (cached next to the clip).
+    let given: Awaited<ReturnType<typeof recordedSim>> | undefined;
+    if (clip.audio) {
+      try { given = await recordedSim(clip); } catch (e) { process.stderr.write(`  ${clip.id}: skipped — ${(e as Error).message}\n`); continue; }
+    }
     const run = await runClip(clip, b, {
       names: !flag('--no-names'), responder,
       ...(arg('--onset-lag') ? { onsetLag: Number(arg('--onset-lag')) } : {}),
       ...(arg('--flicker') ? { flicker: Number(arg('--flicker')) } : {}),
       ...(arg('--seed') ? { seed: Number(arg('--seed')) } : {}),
-    });
+    }, given);
     const m = score(run);
     perClip.push({ clip: clip.id, metrics: m });
     merge(total, m);
@@ -88,9 +96,31 @@ function loadClips(dir: string): Clip[] {
   for (const f of readdirSync(dir).sort()) {
     const p = join(dir, f);
     if (f.endsWith('.json')) out.push(JSON.parse(readFileSync(p, 'utf8')) as Clip);
-    else if (existsSync(join(p, 'clip.json'))) out.push({ ...(JSON.parse(readFileSync(join(p, 'clip.json'), 'utf8')) as Clip) });
+    else if (existsSync(join(p, 'clip.json'))) {
+      const c = JSON.parse(readFileSync(join(p, 'clip.json'), 'utf8')) as Clip;
+      dirs.set(c.id, p);
+      out.push(c);
+    }
   }
   return out;
+}
+
+/** The recognizer for recorded clips: --stt, else whichever key exists. */
+function recordedProvider(): SttProvider | null {
+  const want = arg('--stt') ?? (process.env.DEEPGRAM_API_KEY ? 'deepgram' : process.env.ASSEMBLYAI_API_KEY ? 'assemblyai' : null);
+  if (want === 'deepgram' && process.env.DEEPGRAM_API_KEY) return deepgram({ apiKey: process.env.DEEPGRAM_API_KEY });
+  if (want === 'assemblyai' && process.env.ASSEMBLYAI_API_KEY) return assemblyai({ apiKey: process.env.ASSEMBLYAI_API_KEY });
+  return null;
+}
+
+async function recordedSim(clip: Clip) {
+  const dir = dirs.get(clip.id)!;
+  const provider = recordedProvider();
+  const cached = readdirSync(dir).find((f) => f.startsWith('.stt-') && f.endsWith('.json'));
+  if (!provider && !cached) throw new Error('needs DEEPGRAM_API_KEY or ASSEMBLYAI_API_KEY to transcribe');
+  const p = provider ?? ({ name: cached!.slice(5, -5), diarizes: 'word', open: () => { throw new Error('no key to re-transcribe; using the cache'); } } as SttProvider);
+  const t = await transcribe(clip, dir, p, { speed: Number(arg('--speed') ?? 1), fresh: flag('--fresh'), log: (x) => process.stderr.write(x + '\n') });
+  return { ...alignTimeline(clip, t), speech: t.speech };
 }
 
 function loadEnv(path: string): void {

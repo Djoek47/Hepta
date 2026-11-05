@@ -15,7 +15,8 @@ const counts = (x: PR) => `tp ${x.tp} fp ${x.fp} fn ${x.fn}`;
 export type Row = { label: string; cells: string[]; note?: string };
 
 export function rows(results: BackendResult[]): Row[] {
-  const r = (label: string, fn: (m: Metrics) => string, note?: string): Row => ({ label, cells: results.map((x) => fn(x.metrics)), ...(note ? { note } : {}) });
+  // A backend that did not run shows that in every cell, never a zero that reads like a measurement.
+  const r = (label: string, fn: (m: Metrics) => string, note?: string): Row => ({ label, cells: results.map((x) => (x.perClip.length === 0 ? 'not run' : fn(x.metrics))), ...(note ? { note } : {}) });
   return [
     r('diarization accuracy (words)', (m) => `${p1(m.diarization.words ? m.diarization.engine / m.diarization.words : null)} (recognizer ${p1(m.diarization.words ? m.diarization.raw / m.diarization.words : null)})`),
     r('topic shift P / R', (m) => prs(m.shift)),

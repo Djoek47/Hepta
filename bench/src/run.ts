@@ -36,8 +36,8 @@ function lastFinalOf(steps: Step[], utteranceId: string): SimChunk | undefined {
   return undefined;
 }
 
-export async function runClip(clip: Clip, backend: Backend, opts: RunOptions = {}): Promise<ClipRun> {
-  const sim = simulate(clip, opts);
+export async function runClip(clip: Clip, backend: Backend, opts: RunOptions = {}, given?: Simulation & { speech?: number[] }): Promise<ClipRun> {
+  const sim = given ?? simulate(clip, opts);
   const listener = new Listener({
     mode: clip.mode, detector: backend.make(clip),
     ...(opts.responder ? { responder: opts.responder } : {}),
@@ -47,7 +47,11 @@ export async function runClip(clip: Clip, backend: Backend, opts: RunOptions = {
   const named = new Set<string>();
   const steps: Step[] = [];
   const t0 = performance.now();
+  // Voice activity, when the recognizer gave it (recorded clips); the simulator's chunk starts stand in for it otherwise.
+  const speech = [...(given?.speech ?? [])].sort((a, b) => a - b);
+  let si = 0;
   for (const sc of sim.chunks) {
+    while (si < speech.length && speech[si]! <= sc.chunk.heardToMs) listener.speechStarted(speech[si++]!);
     if (opts.names !== false) {
       for (const w of sc.chunk.words) {
         const lab = w.speaker;

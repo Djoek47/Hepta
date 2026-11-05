@@ -49,3 +49,25 @@ describe('clause boundaries', () => {
     expect(atBoundary(paused)).toBe(true);
   });
 });
+
+describe('keeping up with a slow detector', () => {
+  it('decides a partial already overtaken with the local detector, and the latest and the final with the model', async () => {
+    const calls: string[] = [];
+    const slow = { name: 'model', local: false, detect: async (h: { text: string; final: boolean }, st: Parameters<HeuristicDetector['detect']>[1]) => {
+      calls.push(h.text);
+      await new Promise((r) => setTimeout(r, 20));
+      return new HeuristicDetector().detect(h as never, st);
+    } };
+    const l = new Listener({ mode: 'panel', detector: slow });
+    const parts = ['How', 'How is', 'How is it', 'How is it funded'];
+    const ds = await Promise.all([...parts.map((t) => l.hear(chunk(t, { final: false, utteranceId: 'u1' }))), l.hear(chunk('How is it funded?', { utteranceId: 'u1' }))]);
+    // Everything arrived at once: every partial was overtaken before it ran; only the final went to the model.
+    expect(calls).toEqual(['How is it funded?']);
+    expect(ds.map((d) => d.backend)).toEqual(['heuristic', 'heuristic', 'heuristic', 'heuristic', 'model']);
+    expect(l.skipped).toBe(4);
+    // Arriving one at a time, each partial is the newest when it runs: all go to the model.
+    calls.length = 0;
+    for (const t of ['Where', 'Where does']) await l.hear(chunk(t, { final: false, utteranceId: 'u2' }));
+    expect(calls).toEqual(['Where', 'Where does']);
+  });
+});

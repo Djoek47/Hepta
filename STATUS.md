@@ -322,3 +322,40 @@ has the subject "real cost" (a verb after a determiner is a noun); naming a spea
 **Tests:** 293 passing (marks, operator cue and export over the WebSocket added). `npm run typecheck` clean.
 
 **Next:** step 8 — the bench report (including the held-out set) and the README.
+
+## Step 8 — bench report and README ✅
+
+- **`npm run bench:report`** runs the scripted set and the held-out set (and any recorded clips) and writes
+  [`bench/REPORT.md`](bench/REPORT.md): the numbers per backend, per clip, what the held-out set got wrong, and what
+  every metric counts. A backend that did not run says "not run" in every cell.
+- **Recorded clips** (your TV material): `npm run bench:draft -- --audio clip.mp4 --id my-clip` transcribes once at
+  broadcast speed through Deepgram or AssemblyAI (cached), and drafts `clip.json` — turns with times and words —
+  for labelling ([`bench/clips/README.md`](bench/clips/README.md)). The bench aligns what the recognizer heard with
+  the labelled turns by time and scores them like scripted clips (tested: a scripted clip dressed as a recording
+  scores identically).
+- **Keeping up with a slow detector**: a partial already overtaken by a newer one is decided locally; the latest
+  partial and every final go to the model (`Listener.skipped` counts them).
+- **README** rewritten for the whole system: quick start without keys, what each key switches on, what it hears,
+  the Jev seam, the timing rules, the operator screen, the bench and its honest numbers, commands, layout, limits.
+
+**The held-out set, run once and not tuned on** (heuristic backend):
+
+| | scripted (dev) | held-out |
+| --- | --- | --- |
+| topic shift P / R | 1.00 / 0.95 | **0.00 / 0.00** |
+| diversion P / R | 1.00 / 1.00 | **0.50 / 0.20** |
+| dodged questions · contradictions | 3/3 · 7/8 | 1/1 · 2/2 |
+| ads & crowd · nods · addressed | 1.00 · 1.00 · 1.00 | 1.00 · 1.00 · 1.00 |
+| **wrong interruptions** | **0** | **0** |
+| responses on time | 15/16 | 8/8 |
+
+Structure generalises; vocabulary does not. The next tuning targets, in order: a transition cue with a subject the
+lexicon does not know should open a new line of thought ("Let's move to pensions"); evasion without a change of
+subject; whataboutism and attacks in unlisted words; an opposition attack on the record is not whataboutism.
+Tune them on real clips, with a fresh held-out split.
+
+**Not measured in this build (no keys; the speech hosts are also blocked from this cloud session):** Claude Haiku as
+the Jev backend, Sonnet's time to card, Deepgram and AssemblyAI live. Put the keys in `.env` and run
+`npm run bench:report`.
+
+**Tests:** 297 passing. `npm run typecheck` clean. `npm run e2e:capture` OK.
