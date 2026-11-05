@@ -49,6 +49,24 @@ export class SpeakerTracker {
     this.info.set(id, { ...cur, ...(name !== undefined ? { name } : {}), ...(role !== undefined ? { role } : {}) });
   }
 
+  /**
+   * What a finished utterance turned out to be. A voice heard only in ads or
+   * crowd noise is marked as outside the conversation; one real sentence
+   * makes it a participant for good.
+   */
+  heard(id: string, ignored: 'ad' | 'crowd' | 'backchannel' | undefined): void {
+    const c = this.counts.get(id) ?? { talk: 0, ad: 0, crowd: 0 };
+    if (ignored === 'ad' || ignored === 'crowd') c[ignored]++;
+    else if (ignored === undefined) c.talk++;
+    this.counts.set(id, c);
+    const info = this.info.get(id) ?? { id };
+    if (c.talk === 0 && c.ad + c.crowd > 0) info.outside = c.ad >= c.crowd ? 'ad' : 'crowd';
+    else delete info.outside;
+    this.info.set(id, info);
+  }
+
+  private readonly counts = new Map<string, { talk: number; ad: number; crowd: number }>();
+
   get(id: string): SpeakerInfo | undefined {
     return this.info.get(id);
   }

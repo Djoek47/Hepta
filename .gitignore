@@ -12,3 +12,6 @@ bench/out/
 bench/clips/*/audio.*
 !bench/clips/*/audio.md
 exports/
+.listen.mjs
+.studio.mjs
+apps/studio/public/app.js

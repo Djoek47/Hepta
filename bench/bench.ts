@@ -1,5 +1,6 @@
 /**
  * npm run bench [-- --backends heuristic,jev-haiku] [--clips 01,05] [--misses] [--no-names]
+ *                 [--onset-lag 0.5] [--flicker 0.08] [--seed 7]   (harsher diarization)
  *
  * Plays every clip in bench/clips through the listener once per backend and
  * prints the report. jev-haiku runs when ANTHROPIC_API_KEY is set (in the
@@ -45,7 +46,12 @@ for (const name of wanted) {
   const total = emptyMetrics();
   const perClip: BackendResult['perClip'] = [];
   for (const clip of clips) {
-    const run = await runClip(clip, b, { names: !flag('--no-names') });
+    const run = await runClip(clip, b, {
+      names: !flag('--no-names'),
+      ...(arg('--onset-lag') ? { onsetLag: Number(arg('--onset-lag')) } : {}),
+      ...(arg('--flicker') ? { flicker: Number(arg('--flicker')) } : {}),
+      ...(arg('--seed') ? { seed: Number(arg('--seed')) } : {}),
+    });
     const m = score(run);
     perClip.push({ clip: clip.id, metrics: m });
     merge(total, m);

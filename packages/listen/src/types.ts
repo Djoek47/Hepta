@@ -44,7 +44,13 @@ export type SttChunk = {
 };
 
 export type SpeakerRole = 'moderator' | 'panelist' | 'user';
-export type SpeakerInfo = { id: string; name?: string; role?: SpeakerRole };
+export type SpeakerInfo = {
+  id: string;
+  name?: string;
+  role?: SpeakerRole;
+  /** Heard only in ads or crowd noise so far: not a participant. */
+  outside?: 'ad' | 'crowd';
+};
 
 /** A chunk with its speaker resolved and its clause boundary judged. */
 export type Heard = {

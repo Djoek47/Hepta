@@ -20,5 +20,5 @@
       "@hepta/listen": ["./packages/listen/src/index.ts"]
     }
   },
-  "include": ["packages/core/src", "packages/resolve/src", "packages/memory/src", "packages/hepta/src", "packages/pyramid/src", "packages/listen/src", "packages/listen/test", "bench/src", "bench/test", "bench/bench.ts"]
+  "include": ["packages/core/src", "packages/resolve/src", "packages/memory/src", "packages/hepta/src", "packages/pyramid/src", "packages/listen/src", "packages/listen/test", "bench/src", "bench/test", "bench/bench.ts", "apps/studio/src", "apps/studio/test", "apps/studio/web", "tools"]
 }

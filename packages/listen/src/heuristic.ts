@@ -45,9 +45,12 @@ export class HeuristicDetector implements Detector {
     if (h.event || isCrowd(text)) return ignored('crowd');
     const ad = adScore(text);
     const prev = st.turns[st.turns.length - 1];
-    if (ad >= 2 || (ad >= 1 && h.final) || (prev?.ignored === 'ad' && prev.speaker === h.speaker && h.startMs - prev.endMs < 4000)) {
-      return ignored('ad');
-    }
+    // An ad voice keeps being an ad for the next sentence, but only for a real
+    // sentence with nothing of the programme in it: diarizers hand the first
+    // words after a break ("Welcome back.") to whoever spoke last.
+    const carry = prev?.ignored === 'ad' && prev.speaker === h.speaker && h.startMs - prev.endMs < 4000
+      && words(text).length >= 4 && !cues.transition(text) && !mentionsHepta(text);
+    if (ad >= 2 || (ad >= 1 && h.final) || carry) return ignored('ad');
     if (isNod(text) && !this.answersPolarNow(text, h, st)) return ignored('backchannel');
 
     // ---- who it is for
@@ -167,8 +170,8 @@ export class HeuristicDetector implements Detector {
   /** A "Yes." right after a yes-or-no question put to this speaker is an answer, not a nod. */
   private answersPolarNow(text: string, h: Heard, st: DetectState): boolean {
     if (!/^(yes|no|yeah|yep|nope)\b/i.test(text.trim())) return false;
-    const last = [...st.questions].reverse().find((q) => q.status === 'open');
-    return !!last && last.to === h.speaker && h.startMs - last.askedMs < 15_000;
+    const last = [...st.questions].reverse().find((q) => q.status === 'open' && q.by !== h.speaker);
+    return !!last && (last.to === h.speaker || last.to === null) && h.startMs - last.askedMs < 15_000;
   }
 
   /** The open question this sentence answers, if any. */

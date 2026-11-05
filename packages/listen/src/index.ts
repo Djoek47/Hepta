@@ -10,3 +10,7 @@ export * from './speakers.js';
 export * from './boundary.js';
 export * from './memory.js';
 export * from './engine.js';
+export * from './clip.js';
+export * from './stt/scripted.js';
+export * from './stt/index.js';
+export * from './audio.js';

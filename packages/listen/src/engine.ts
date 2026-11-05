@@ -85,6 +85,7 @@ export class Listener {
     const detectorMs = this.clock() - d0;
 
     const committed = heard.final ? this.memory.commit(heard, j) : undefined;
+    if (heard.final) this.speakers.heard(speaker, j.ignore);
     const respondState = this.timing(heard, j, committed);
 
     const decision: JevDecision = {
