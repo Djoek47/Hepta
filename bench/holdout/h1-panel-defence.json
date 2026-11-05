@@ -1,0 +1,30 @@
+{
+  "id": "h1-panel-defence",
+  "title": "Held out: defence and pensions",
+  "mode": "panel",
+  "note": "Held-out set: written after step 4, never tuned on. Evasion without a change of subject, an opposition attack on the record that is not whataboutism, whataboutism in other words, a small revision that is not a contradiction.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 162 },
+    "SEC": { "name": "Defence secretary", "role": "panelist", "wpm": 172 },
+    "OPP": { "name": "Opposition spokesperson", "role": "panelist", "wpm": 180 },
+    "CROWD": { "role": "crowd" }
+  },
+  "dodgeTurns": 2,
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Good evening. We begin with defence spending. Defence secretary, will you hit two and a half percent of GDP this year?", "topic": "defence", "shift": "none", "question": { "id": "q1", "to": "SEC", "dodged": true } },
+    { "id": "t2", "speaker": "SEC", "text": "We're investing more than any government in a generation.", "topic": "defence", "shift": "none", "diversion": ["deflection"] },
+    { "id": "t3", "speaker": "OPP", "text": "That's a yes or no question.", "topic": "defence", "shift": "none" },
+    { "id": "t4", "speaker": "SEC", "text": "Look, the threats we face are real, and our armed forces know we have their backs.", "topic": "defence", "shift": "none", "diversion": ["deflection"] },
+    { "id": "t5", "speaker": "OPP", "text": "Your party cut the army to its smallest size in two hundred years.", "topic": "defence", "shift": "none" },
+    { "id": "t6", "speaker": "SEC", "text": "And when your lot were in charge, you let the navy rot in port.", "topic": "the opposition's record", "shift": "diversion", "diversion": ["whataboutism"] },
+    { "id": "t7", "speaker": "CROWD", "text": "[applause]", "ignore": "crowd" },
+    { "id": "t8", "speaker": "MOD", "text": "Let's move to pensions, because many of you wrote in about this. Opposition spokesperson, would you keep the triple lock?", "topic": "pensions", "shift": "natural", "question": { "id": "q2", "to": "OPP" } },
+    { "id": "t9", "speaker": "OPP", "text": "Yes, we would keep the triple lock for the whole of the next parliament.", "topic": "pensions", "shift": "none", "answers": "q2" },
+    { "id": "t10", "speaker": "SEC", "text": "Mm-hmm.", "backchannel": true, "overlapMs": 200 },
+    { "id": "t11", "speaker": "OPP", "text": "And pensions would rise by 4 percent next April.", "topic": "pensions", "shift": "none", "claim": { "id": "c1", "subject": "pension rise", "value": 4, "unit": "%", "kind": "commitment" } },
+    { "id": "t12", "speaker": "MOD", "text": "Defence secretary, same question.", "topic": "pensions", "shift": "none", "question": { "id": "q3", "to": "SEC" } },
+    { "id": "t13", "speaker": "SEC", "text": "We have protected pensioners throughout.", "topic": "pensions", "shift": "none" },
+    { "id": "t14", "speaker": "OPP", "text": "To be precise, pensions would rise by 4.1 percent.", "topic": "pensions", "shift": "none", "claim": { "id": "c2", "subject": "pension rise", "value": 4.1, "unit": "%", "kind": "commitment" } },
+    { "id": "t15", "speaker": "MOD", "text": "Hepta, anything to flag?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

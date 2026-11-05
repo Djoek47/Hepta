@@ -1,0 +1,16 @@
+{
+  "id": "h2-conversation-marathon",
+  "title": "Held out: planning a marathon",
+  "mode": "conversation",
+  "note": "Held-out set. A distance revised upward mid-sentence with a qualification, a filler that is not a turn, two questions to Hepta.",
+  "speakers": { "ME": { "name": "Me", "role": "user", "wpm": 150 } },
+  "turns": [
+    { "id": "t1", "speaker": "ME", "text": "Right, I'm trying to plan my training for the marathon.", "topic": "training", "shift": "none" },
+    { "id": "t2", "speaker": "ME", "text": "I'm running about 30 kilometres a week at the moment.", "topic": "training", "shift": "none", "claim": { "id": "c1", "subject": "weekly distance", "value": 30, "unit": "km", "kind": "fact" } },
+    { "id": "t3", "speaker": "ME", "text": "Uh-huh.", "backchannel": true },
+    { "id": "t4", "speaker": "ME", "text": "The race is in April, so I've got about sixteen weeks.", "topic": "training", "shift": "none" },
+    { "id": "t5", "speaker": "ME", "text": "Actually I'm doing more like 45 kilometres a week, if I count the long run.", "topic": "training", "shift": "none", "diversion": ["changed_claim"], "claim": { "id": "c2", "subject": "weekly distance", "value": 45, "unit": "km", "kind": "fact" }, "contradicts": { "of": "c1", "kind": "changed_claim" }, "hepta": "cut" },
+    { "id": "t6", "speaker": "ME", "text": "Hepta, is that enough mileage for a first marathon?", "meta": true, "addressed": true, "hepta": "respond" },
+    { "id": "t7", "speaker": "ME", "text": "And what should I eat the night before?", "topic": "food", "shift": "follow_up", "addressed": true, "hepta": "respond" }
+  ]
+}

@@ -119,3 +119,57 @@ resample/ffmpeg/pace, downsampler, the studio over a real WebSocket — scripted
 reaching the recognizer, a plain error when no recognizer key exists). `npm run typecheck` clean.
 
 **Next:** step 4 — threads, topics and shift detection.
+
+## Step 4 — threads, topics, shift detection ✅
+
+**Lines of thought** (`packages/listen/src/threads.ts`). Each subject is a thread with a bag of the words it
+has been discussed in, an owner (who opened it), and a weight: **+1 while on air, +0.5 each time its words come
+up elsewhere, halved every 5 minutes** (`HALF_LIFE_MS`). One thread is on air at a time. Weights fade unless the
+subject comes back.
+
+**Subject per utterance, with continuity.** Most sentences carry on the subject on air; a sentence moves it
+only with weight:
+- lexicon words are strong or weak (`~jobs`, `~rent`, `~build`): one weak word never moves the subject
+  ("getting on with the job", "rent is 1,450" in a budget);
+- one strong word moves it in a statement that is off the subject, not in a question asked within it
+  ("…lose their homes?" stays on the rail line) — unless it names a line already open ("What about the trip?");
+- a cue moves it: "let's turn to…", "next,", "on council tax,", "still on…", "stay with…";
+- an answer stays with its question's subject; "that's not what I asked" goes back to the question's;
+- tonight's subject (debater stance, evidence pack) joins the lexicon and wins ties;
+- a cue to Hepta in a panel has no subject (it is about the programme).
+
+**Turning on a person or a record.** An ad hominem puts "about the doctor" on air, a whataboutism "the
+shadow minister's record" — for a moment, without opening a line of thought. The person it turned on answering
+back stays there; anyone else returns to the subject it left (a follow-up).
+
+**Shift classification.** none · natural (a cue, or the moderator moving on) · follow_up (a link, a return
+to an open line, back from a diversion, a subject raised in the last two turns) · diversion (an ad hominem or
+whataboutism; a deflection only when it changes the subject — evading without changing it is a diversion with
+shift none).
+
+Also fixed while here: a question in the second sentence of a turn is put to the person named in the first
+("Minister, the question was about funding. Where does the money come from?" was going to the last speaker);
+asking the chair for the floor ("Can I come back on growth?") is not a question anyone must answer; between
+equally good answers, the latest question wins; "Hepta speaks for the motion" is about Hepta, not to it.
+
+| scripted set (dev) | step 2 | step 4 |
+| --- | --- | --- |
+| topic shift P / R | 0.37 / 0.70 | **1.00 / 0.95** |
+| shift type right | 14/14 | 19/19 |
+| diversion P / R | 0.63 / 1.00 | **1.00 / 1.00** |
+| addressed to Hepta P / R | 0.86 / 1.00 | **1.00 / 1.00** |
+| decision latency median / p95 | 0.15 / 0.59 ms | 0.17 / 0.51 ms |
+
+**Read these numbers with care.** The 10 clips were labelled before any detector existed, but steps 2–4
+tuned rules against their misses: they are a development set now. So this step also adds a **held-out set**
+(`bench/holdout`, 4 clips, 40 turns: defence/pensions, a marathon plan, social media, farming) written before
+any further tuning, with phrasings no cue lists. It is not run until the final report
+(`npm run bench -- --set holdout`). Real TV clips are the real test.
+
+The one shift still missed is semantic ("the committee's figures leave out the grid upgrades" returns to the
+cost argument without a cost word) — the kind of call the Haiku backend is there for.
+
+**Tests:** 270 passing (9 new: half-life, mention lift, on-air light, owner; continuity, weak words, cues,
+questions within a subject, returns, ad hominem on air and back, answers keep their subject).
+
+**Next:** step 5 — diversions, dodged questions (N turns), contradictions with quotes.

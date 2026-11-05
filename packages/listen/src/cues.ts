@@ -74,6 +74,15 @@ export const TRANSITION = [
   /\bleave it there\b/,
 ];
 
+/** A speaker steering to a named subject: this moves the subject, not just colours the move. */
+export const STEER = [
+  /^(and|but|so)?\s*on [a-z -]{3,30},/,
+  /\b(going|coming|come) back (to|on)\b/,
+  /\bcan i come back on\b/,
+  /\bstay with\b/,
+  /\bstill on\b/,
+];
+
 /** A speaker tying what they say to what was just said. */
 export const LINK = [
   /^(and|but|so)?\s*(on|about) (that|this|the) (point|question)\b/,
@@ -120,6 +129,29 @@ export function mentionsHepta(text: string): boolean {
   return /\bhepta\b/i.test(text);
 }
 
+/**
+ * Spoken TO Hepta, not about it. "Hepta, your response?", "…, Hepta?", "let's
+ * ask Hepta", "what does Hepta think" — but not "Hepta speaks for the motion".
+ */
+export function addressesHepta(text: string): boolean {
+  const s = lower(text);
+  if (!/\bhepta\b/.test(s)) return false;
+  if (/(^|[.!?]\s*)hepta\s*[,?!:]/.test(s)) return true;
+  if (/,\s*hepta\s*[?.!]?\s*$/.test(s) || /^\s*hepta\s*[?.!]?\s*$/.test(s)) return true;
+  if (/\b(ask|asking|over to|hear from|turn to|come to|what does|what do you think|does|can|could|would|will|did)\s+hepta\b/.test(s)) return true;
+  if (/\bhepta\s+(what|do you|can you|could you|would you|is that|are you|did you|any|anything)\b/.test(s)) return true;
+  return false;
+}
+
+/** Talking about the question itself: "that's not what I asked", "the question was…". */
+const QUESTION_REF = [
+  /\bnot what i asked\b/, /\bthe question was\b/, /\banswer the question\b/, /\byou (haven'?t|have not|didn'?t|did not) (answered|said)\b/,
+  /\bmy question (is|was)\b/, /\bthat'?s not an answer\b/,
+];
+export function refersToQuestion(text: string): boolean {
+  return any(QUESTION_REF, lower(text));
+}
+
 const QUESTION_START = /^(and |but |so |well |now |then |okay |ok )*(how|what|why|when|where|who|whom|which|whose|is|are|was|were|do|does|did|will|would|can|could|should|shall|have|has|had|may|might|isn'?t|aren'?t|don'?t|doesn'?t|didn'?t|won'?t|wouldn'?t|can'?t)\b/;
 
 /** A question: a question mark, or the shape of one. */
@@ -144,7 +176,14 @@ export const cues = {
   deflect: (s: string) => any(DEFLECT, lower(s)),
   transition: (s: string) => any(TRANSITION, lower(s)),
   link: (s: string) => any(LINK, lower(s).trim()),
+  steer: (s: string) => any(STEER, lower(s).trim()),
 };
+
+/** Asking the chair for the floor is not a question anyone has to answer. */
+const PERMISSION = [/^(and |but |so )?(can|could|may) i (just )?(come back|come in|say|add|jump in|ask|make a point|respond)\b/, /^(can|could|may) i just\b/];
+export function asksForTheFloor(text: string): boolean {
+  return any(PERMISSION, lower(text).trim());
+}
 
 export function wordCount(text: string): number {
   return words(text).length;

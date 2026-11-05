@@ -19,7 +19,9 @@ const args = process.argv.slice(2);
 const arg = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 const flag = (k: string) => args.includes(k);
 
-const clips = loadClips('bench/clips').filter((c) => !arg('--clips') || arg('--clips')!.split(',').some((p) => c.id.startsWith(p)));
+// --set holdout: the held-out clips, written after step 4 and never tuned on.
+const set = arg('--set') ?? 'clips';
+const clips = loadClips(set === 'holdout' ? 'bench/holdout' : 'bench/clips').filter((c) => !arg('--clips') || arg('--clips')!.split(',').some((p) => c.id.startsWith(p)));
 const client = claudeClient();
 const haikuTimings: HaikuTiming[] = [];
 
@@ -64,7 +66,7 @@ for (const name of wanted) {
 }
 
 const turns = clips.reduce((a, c) => a + c.turns.length, 0);
-const title = `HEPTA LISTEN — bench: ${clips.length} clips, ${turns} turns`;
+const title = `HEPTA LISTEN — bench${set === 'holdout' ? ' (HELD OUT)' : ''}: ${clips.length} clips, ${turns} turns`;
 console.log('\n' + formatReport(results, title));
 if (flag('--misses')) {
   for (const r of results) {
@@ -72,7 +74,7 @@ if (flag('--misses')) {
     for (const x of r.metrics.misses) console.log(`  ${x.clip.padEnd(30)} ${x.turn.padEnd(5)} ${x.what.padEnd(22)} ${x.detail}`);
   }
 }
-const out = arg('--out') ?? 'bench/out';
+const out = arg('--out') ?? (set === 'holdout' ? 'bench/out/holdout' : 'bench/out');
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'report.md'), formatMarkdown(results, title) + '\n');
 writeFileSync(join(out, 'report.json'), JSON.stringify({ title, at: new Date().toISOString(), results: results.map((r) => ({ ...r, metrics: { ...r.metrics, misses: r.metrics.misses } })) }, null, 1));

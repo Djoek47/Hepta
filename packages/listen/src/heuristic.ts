@@ -4,8 +4,8 @@
  * claims, the evidence pack). Microseconds, no network — the baseline every
  * model-backed detector has to beat, and the fallback when one is late.
  */
-import { buildLexicon, topicsIn, type Lexicon } from './lexicon.js';
-import { adScore, cues, isCrowd, isNod, isQuestion, mentionsHepta, questionSentences } from './cues.js';
+import { buildLexicon, topicsIn, type Lexicon, type TopicHit } from './lexicon.js';
+import { addressesHepta, adScore, asksForTheFloor, cues, isCrowd, isNod, isQuestion, mentionsHepta, questionSentences, refersToQuestion } from './cues.js';
 import { contentStems, jaccard, keyOverlap, numbers, relDiff, stem, words, endsInOpenNumber } from './text.js';
 import type {
   ClaimJudgment, DetectState, Detector, DiversionType, Heard, Judgment, QuestionView, Reading, ShiftType,
@@ -55,24 +55,28 @@ export class HeuristicDetector implements Detector {
 
     // ---- who it is for
     const conversation = st.mode === 'conversation';
-    const addressedToHepta = mentionsHepta(text) || (conversation && isQuestion(text));
-
-    // ---- what it is about
-    const { topic, keys } = this.topicOf(text, st);
+    const addressedToHepta = addressesHepta(text) || (conversation && isQuestion(text));
 
     // ---- questions and answers
     const question = addressedToHepta ? undefined : this.questionIn(text, h, st);
-    const answered = this.answering(text, h, st, topic);
+    const answered = this.answering(text, h, st);
 
     // ---- claims
-    const claims = this.claimsIn(text, h, st, keys);
+    const claims = this.claimsIn(text, h, st, st.current.keys);
     const contradiction = claims.find((c) => c.contradicts);
 
-    // ---- diversions
-    const div = this.diversion(text, h, st, topic, answered, contradiction);
+    // ---- diversions the words themselves show
+    let div = this.markedDiversion(text, h, st, answered, contradiction);
+
+    // ---- what it is about
+    const subject = this.subjectOf(text, h, st, answered, div?.type, addressedToHepta);
+    const { topic, keys } = subject;
+
+    // ---- answering a different question
+    if (!div) div = this.deflection(text, h, st, topic, answered);
 
     // ---- shift
-    const shiftType = this.shift(text, h, st, topic, keys, div?.type, addressedToHepta);
+    const shiftType = this.shift(text, h, st, subject, div?.type);
 
     // ---- readings: what this sentence could still turn out to be
     const readings = this.readings(text, h, st, shiftType, div, answered, topic);
@@ -81,6 +85,7 @@ export class HeuristicDetector implements Detector {
     const j: Judgment = {
       topic, topicKeys: keys, shiftType, addressedToHepta, readings,
       confidence: Math.min(0.95, top.p),
+      ...(subject.about ? { about: subject.about } : {}),
     };
     if (div) j.diversion = div;
     const first = contradiction ?? claims[0];
@@ -93,45 +98,114 @@ export class HeuristicDetector implements Detector {
 
   // ------------------------------------------------------------------ subject
 
-  topicOf(text: string, st: DetectState): { topic: string | null; keys: string[] } {
-    const cur = st.current;
-    const named = topicsIn(text, this.stateLexicon(st));
+  /**
+   * The subject of an utterance, with continuity: most sentences carry on the
+   * subject on air, and a sentence names a new one only with weight — a strong
+   * word, or several, or a cue that says so ("let's turn to", "on council tax").
+   * An answer stays with its question. Turning on a person or the other side's
+   * record puts that on air for a moment, and the subject returns after it.
+   */
+  subjectOf(text: string, h: Heard, st: DetectState, answered: QuestionView | undefined, marked: DiversionType | undefined, toHepta: boolean):
+    { topic: string | null; keys: string[]; about?: { kind: 'person' | 'record'; target: string | null } } {
+    const hits = topicsIn(text, this.stateLexicon(st));
     const stems = contentStems(text);
-    // A named subject wins, unless the sentence is mostly about the one on air.
-    if (named[0]) {
-      if (cur.topic && named[0].topic !== cur.topic && keyOverlap(text, cur.keys) >= 0.5 && named[0].hits < 2) {
-        return { topic: cur.topic, keys: cur.keys };
-      }
-      return { topic: named[0].topic, keys: [...new Set([...named[0].keys, ...stems.slice(0, 4)])] };
+    // A cue to Hepta is about the programme, not the subject (in conversation, it is the subject).
+    if (toHepta && st.mode !== 'conversation' && (hits[0]?.score ?? 0) < 2) return { topic: null, keys: [] };
+    if (marked === 'ad_hominem') {
+      const target = this.target(text, h, st);
+      return { topic: `about ${this.nameOf(target, st)}`, keys: [], about: { kind: 'person', target } };
     }
-    if (cur.topic && (stems.length < 2 || keyOverlap(text, cur.keys) > 0)) return { topic: cur.topic, keys: cur.keys };
-    // An existing line of thought this sentence is about.
-    const thread = st.threads
-      .map((t) => ({ t, o: jaccard(stems, t.keys.map(stem)) }))
-      .filter((x) => x.o >= 0.2)
-      .sort((a, b) => b.o - a.o)[0];
-    if (thread) return { topic: thread.t.topic, keys: thread.t.keys };
-    if (stems.length >= 2) {
-      const ws = words(text).filter((w) => stems.includes(stem(w)) && !VERBS.has(w));
-      const name = ws.slice(0, 2).join(' ') || stems.slice(0, 2).join(' ');
-      return { topic: name, keys: stems.slice(0, 6) };
+    if (marked === 'whataboutism') {
+      const target = this.target(text, h, st);
+      return { topic: `${this.nameOf(target, st)}'s record`, keys: [], about: { kind: 'record', target } };
     }
-    return { topic: cur.topic, keys: cur.keys };
+    if (refersToQuestion(text)) {
+      const q = [...st.questions].reverse().find((x) => x.topic && x.status === 'open' && (x.to === h.speaker || x.by === h.speaker || x.to !== null));
+      if (q?.topic) return { topic: q.topic, keys: q.keys };
+    }
+    if (answered?.topic) return { topic: answered.topic, keys: this.keysOf(answered.topic, st, answered.keys) };
+
+    // What carries on: the subject on air, or — after a diversion — the one it left,
+    // unless this is the person it turned on, answering back.
+    const cur = st.current;
+    const replying = cur.about && cur.about.target === h.speaker;
+    const base = cur.about && !replying ? cur.resume ?? null : cur.topic ? { topic: cur.topic, keys: cur.keys } : null;
+    const best = hits[0];
+    const named = (b: TopicHit) => ({ topic: b.topic, keys: this.keysOf(b.topic, st, b.keys.concat(stems.slice(0, 4))) });
+
+    if (cues.transition(text) || cues.steer(text)) {
+      if (best) return named(best);
+      if (!base && stems.length >= 2) return this.fresh(text, stems);
+    }
+    if (!base) {
+      if (cur.about && replying) return { topic: cur.topic, keys: [] };
+      if (best) return named(best);
+      return stems.length >= 2 ? this.fresh(text, stems) : { topic: null, keys: [] };
+    }
+    if (replying && (!best || best.score < 3)) return { topic: cur.topic, keys: [] };
+    if (!best || best.topic === base.topic) return { topic: base.topic, keys: base.keys };
+    const baseScore = hits.find((x) => x.topic === base.topic)?.score ?? 0;
+    const onAirWords = stems.filter((x) => base.keys.includes(x)).length / Math.max(1, stems.length);
+    const off = onAirWords < 0.25;
+    // One strong word in a question is asked within the subject; in a statement, off the subject, it moves it.
+    const single = best.score < 3;
+    // Naming a line of thought already open is a return, even in a question ("What about the trip?").
+    const known = st.threads.some((t) => t.topic === best.topic);
+    const moves = best.score >= 2 && best.score > baseScore
+      && ((off && (!single || !isQuestion(text) || known)) || best.score - baseScore >= 3);
+    return moves ? named(best) : { topic: base.topic, keys: base.keys };
   }
 
+  private fresh(text: string, stems: string[]): { topic: string; keys: string[] } {
+    const ws = words(text).filter((w) => stems.includes(stem(w)) && !VERBS.has(w));
+    return { topic: ws.slice(0, 2).join(' ') || stems.slice(0, 2).join(' '), keys: stems.slice(0, 6) };
+  }
+
+  private keysOf(topic: string, st: DetectState, extra: string[]): string[] {
+    const t = st.threads.find((x) => x.topic === topic);
+    return [...new Set([...(t?.keys ?? []), ...extra.map(stem)])].slice(0, 16);
+  }
+
+  /** Who a diversion turns on: a speaker named in it, else the one being answered. */
+  private target(text: string, h: Heard, st: DetectState): string | null {
+    if (/\b(a |the )?(chatbot|machine|computer|hepta)\b/i.test(text)) return 'hepta';
+    const s = text.toLowerCase();
+    const named = st.speakers.filter((p) => p.id !== h.speaker && p.name).sort((a, b) => b.name!.length - a.name!.length)
+      .find((p) => s.includes(p.name!.toLowerCase()));
+    if (named) return named.id;
+    for (let i = st.turns.length - 1; i >= 0; i--) {
+      const t = st.turns[i]!;
+      if (t.speaker !== h.speaker && !t.ignored) return t.speaker;
+    }
+    return null;
+  }
+
+  private nameOf(id: string | null, st: DetectState): string {
+    if (id === 'hepta') return 'Hepta';
+    if (!id) return 'the other side';
+    const s = st.speakers.find((x) => x.id === id);
+    return s?.name ? `the ${s.name.toLowerCase()}` : id;
+  }
+
+  private lexCache: { key: string; lex: Lexicon } | null = null;
+  /** Tonight's subject — the stance, the evidence pack — joins the lexicon and is preferred. */
   private stateLexicon(st: DetectState): Lexicon {
     if (st.evidence.length === 0 && !st.stance) return this.lex;
+    const key = `${st.stance?.topic ?? ''}|${st.evidence.map((e) => e.id).join(',')}`;
+    if (this.lexCache?.key === key) return this.lexCache.lex;
     const extra: Record<string, string[]> = { ...this.baseLex };
     if (st.stance) extra[st.stance.topic] = [...(extra[st.stance.topic] ?? []), ...st.stance.keys];
-    return buildLexicon(extra);
+    const lex = buildLexicon(extra, st.stance ? [st.stance.topic] : []);
+    this.lexCache = { key, lex };
+    return lex;
   }
 
   // ---------------------------------------------------------------- questions
 
-  /** Who a sentence is put to: a name said to them, or else whoever spoke last. */
-  addressee(text: string, h: Heard, st: DetectState): string | null {
+  /** A speaker named in a sentence (by name, or by a role said alone: "Minister, …"). 'all' for the whole panel. */
+  private namedIn(text: string, h: Heard, st: DetectState): string | 'all' | null {
     const s = text.toLowerCase();
-    if (/^(panel|everyone|all of you|both of you)\b/.test(s)) return null;
+    if (/^(panel|everyone|all of you|both of you)\b/.test(s)) return 'all';
     const named = st.speakers
       .filter((p) => p.id !== h.speaker && p.name)
       .map((p) => ({ id: p.id, name: p.name!.toLowerCase() }))
@@ -139,11 +213,28 @@ export class HeuristicDetector implements Detector {
     for (const p of named) {
       if (new RegExp(`(^|[,.]\\s*|\\s)${escape(p.name)}(,|\\?|\\.|\\s|$)`).test(s)) return p.id;
     }
-    // A role said alone ("Minister, …") matches the speaker whose name ends with it.
     const voc = /^([a-z ]{3,30}),/.exec(s)?.[1]?.trim();
     if (voc) {
       const hit = named.find((p) => p.name.endsWith(voc));
       if (hit) return hit.id;
+    }
+    return null;
+  }
+
+  /**
+   * Who a sentence is put to: a name said to them — in this sentence, or in the
+   * one just before it in the same turn ("Minister, the question was about
+   * funding. Where does the money come from?") — or else whoever spoke last.
+   */
+  addressee(text: string, h: Heard, st: DetectState): string | null {
+    const here = this.namedIn(text, h, st);
+    if (here === 'all') return null;
+    if (here) return here;
+    const prev = st.turns[st.turns.length - 1];
+    if (prev && prev.speaker === h.speaker && !prev.ignored && h.startMs - prev.endMs < 2500) {
+      const before = this.namedIn(prev.text, h, st);
+      if (before === 'all') return null;
+      if (before) return before;
     }
     for (let i = st.turns.length - 1; i >= 0; i--) {
       const t = st.turns[i]!;
@@ -153,7 +244,7 @@ export class HeuristicDetector implements Detector {
   }
 
   questionIn(text: string, h: Heard, st: DetectState): Judgment['question'] | undefined {
-    const qs = questionSentences(text);
+    const qs = questionSentences(text).filter((q) => !asksForTheFloor(q));
     const reask = /\bthe question was\b/i.test(text);
     if (qs.length === 0 && !reask) return undefined;
     const q = qs[qs.length - 1] ?? text;
@@ -175,12 +266,13 @@ export class HeuristicDetector implements Detector {
   }
 
   /** The open question this sentence answers, if any. */
-  answering(text: string, h: Heard, st: DetectState, topic: string | null): QuestionView | undefined {
+  answering(text: string, h: Heard, st: DetectState): QuestionView | undefined {
     const open = st.questions.filter((q) => q.status === 'open' && q.by !== h.speaker && (q.to === h.speaker || q.to === null));
+    // The best answer wins; between equals, the question asked last.
     let best: { q: QuestionView; s: number } | undefined;
     for (const q of open) {
-      const s = answerScore(text, q, topic);
-      if (s >= 0.5 && (!best || s > best.s)) best = { q, s };
+      const s = answerScore(text, q, null) + 0.05 * keyOverlap(text, q.keys);
+      if (s >= 0.5 && (!best || s >= best.s)) best = { q, s };
     }
     return best?.q;
   }
@@ -256,11 +348,9 @@ export class HeuristicDetector implements Detector {
 
   // --------------------------------------------------------------- diversions
 
-  diversion(
-    text: string, h: Heard, st: DetectState, topic: string | null,
-    answered: QuestionView | undefined, contradiction: ClaimJudgment | undefined,
-  ): Judgment['diversion'] | undefined {
-    const cand: { type: DiversionType; confidence: number; why: string; questionId?: string; claimId?: string }[] = [];
+  /** Diversions the words show by themselves, given what this speaker said before. */
+  markedDiversion(text: string, h: Heard, st: DetectState, answered: QuestionView | undefined, contradiction: ClaimJudgment | undefined): Judgment['diversion'] | undefined {
+    const cand: NonNullable<Judgment['diversion']>[] = [];
     if (contradiction?.contradicts?.kind === 'changed_claim' && contradiction.contradicts.claimId) {
       cand.push({ type: 'changed_claim', confidence: 0.8, why: 'same speaker, same subject, a different number', claimId: contradiction.contradicts.claimId });
     }
@@ -269,38 +359,42 @@ export class HeuristicDetector implements Detector {
     }
     if (cues.goalposts(text)) {
       const commitment = [...st.claims].reverse().find((c) => c.speaker === h.speaker && c.kind === 'commitment'
-        && (keyOverlap(text, c.keys) >= 0.34 || (topic !== null && keyOverlap(text, st.current.keys) > 0)));
+        && (keyOverlap(text, c.keys) >= 0.34 || keyOverlap(text, st.current.keys.slice(0, 6)) > 0));
       if (commitment) cand.push({ type: 'moving_goalposts', confidence: 0.7, why: 'a weaker test for the same commitment', claimId: commitment.id });
     }
     if (cues.adHominem(text)) cand.push({ type: 'ad_hominem', confidence: 0.7, why: 'about the person, not the point' });
     if (cues.whatabout(text) && !answered) cand.push({ type: 'whataboutism', confidence: 0.65, why: "answered with the other side's record" });
-    // Answering a different question: one is open for this speaker, and this is not its answer.
-    const open = st.questions.filter((q) => q.status === 'open' && q.to === h.speaker && q.by !== h.speaker);
-    const q = open[open.length - 1];
-    if (q && !answered) {
-      const offTopic = topic !== null && q.topic !== null && topic !== q.topic && keyOverlap(text, q.keys) < 0.34;
-      if (offTopic || cues.deflect(text)) {
-        cand.push({ type: 'deflection', confidence: offTopic && cues.deflect(text) ? 0.75 : 0.6, why: `the question put to them was “${q.text}”`, questionId: q.id });
-      }
-    }
     cand.sort((a, b) => b.confidence - a.confidence);
     return cand[0];
   }
 
+  /** Answering a different question: one is open for this speaker, and this is not its answer. */
+  deflection(text: string, h: Heard, st: DetectState, topic: string | null, answered: QuestionView | undefined): Judgment['diversion'] | undefined {
+    if (answered) return undefined;
+    const open = st.questions.filter((q) => q.status === 'open' && q.to === h.speaker && q.by !== h.speaker);
+    const q = open[open.length - 1];
+    if (!q) return undefined;
+    const offTopic = topic !== null && q.topic !== null && topic !== q.topic && keyOverlap(text, q.keys) < 0.34;
+    if (!offTopic && !cues.deflect(text)) return undefined;
+    return { type: 'deflection', confidence: offTopic && cues.deflect(text) ? 0.75 : 0.6, why: `the question put to them was “${q.text}”`, questionId: q.id };
+  }
+
   // -------------------------------------------------------------------- shift
 
-  shift(text: string, h: Heard, st: DetectState, topic: string | null, keys: string[], div: DiversionType | undefined, toHepta: boolean): ShiftType {
-    if (div === 'ad_hominem' || div === 'whataboutism' || div === 'deflection') return 'diversion';
-    const cur = st.current.topic;
-    if (toHepta || !cur || !topic || topic === cur) return 'none';
-    if (keyOverlap(text, st.current.keys) >= 0.5) return 'none';
-    const role = st.speakers.find((s) => s.id === h.speaker)?.role;
+  shift(text: string, h: Heard, st: DetectState, subject: { topic: string | null; keys: string[]; about?: unknown }, div: DiversionType | undefined): ShiftType {
+    const { topic, keys } = subject;
+    if (topic === null) return 'none';
+    if (subject.about) return st.current.about && st.current.topic === topic ? 'none' : 'diversion';
+    const cur = st.current;
+    if (!cur.topic || topic === cur.topic) return 'none';
+    if (div === 'deflection') return 'diversion';
     if (cues.transition(text)) return 'natural';
-    if (cues.link(text)) return 'follow_up';
-    // Raised a moment ago, or a line of thought already open: following it up.
+    if (cues.link(text) || refersToQuestion(text)) return 'follow_up';
+    if (cur.about) return 'follow_up'; // back from a diversion to the subject it left
+    if (st.threads.some((t) => t.topic === topic)) return 'follow_up'; // a line of thought taken up again
     const recent = st.turns.slice(-2).map((t) => t.text).join(' ');
     if (keys.some((k) => contentStems(recent).includes(stem(k)))) return 'follow_up';
-    if (st.threads.some((t) => t.topic === topic)) return 'follow_up';
+    const role = st.speakers.find((s) => s.id === h.speaker)?.role;
     return role === 'moderator' ? 'natural' : 'follow_up';
   }
 

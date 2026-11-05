@@ -1,0 +1,30 @@
+{
+  "id": "h4-debater-farming",
+  "title": "Held out: paying farmers to restore nature (Hepta for)",
+  "mode": "debater",
+  "note": "Held-out set. A figure against the evidence pack Hepta may cut in on, a nod, and a reason against its stance after it has spoken once.",
+  "speakers": {
+    "HOST": { "name": "Host", "role": "moderator", "wpm": 158 },
+    "GST": { "name": "Guest", "role": "panelist", "wpm": 176 }
+  },
+  "stance": {
+    "topic": "nature payments",
+    "keys": ["subsidies", "nature", "farmers", "wildlife", "birds"],
+    "position": "Subsidies should pay farmers to restore nature: farmland birds have fallen by more than half since 1970.",
+    "confidence": 0.75,
+    "evidence": ["Farmland bird index down 58% since 1970"]
+  },
+  "evidence": [
+    { "id": "e1", "subject": "farmland birds since 1970", "keys": ["birds", "bird", "farmland"], "value": -58, "unit": "%", "text": "Farmland bird populations down 58% since 1970", "source": "National statistics, 2025" }
+  ],
+  "turns": [
+    { "id": "t1", "speaker": "HOST", "text": "Our motion: subsidies should pay farmers to restore nature. Hepta argues for, our guest against.", "meta": true },
+    { "id": "t2", "speaker": "GST", "text": "Farmers are already the best custodians of the countryside we have.", "topic": "nature payments", "shift": "none" },
+    { "id": "t3", "speaker": "GST", "text": "Bird numbers on farmland have actually gone up by 10 percent since 1970.", "topic": "nature payments", "shift": "none", "claim": { "id": "c1", "subject": "farmland birds", "value": 10, "unit": "%", "kind": "fact" }, "contradicts": { "of": "e1", "kind": "evidence" }, "hepta": "cut" },
+    { "id": "t4", "speaker": "GST", "text": "And paying people to grow wildflowers won't feed anyone.", "topic": "nature payments", "shift": "none" },
+    { "id": "t5", "speaker": "HOST", "text": "Hepta, your reply?", "meta": true, "addressed": true, "hepta": "respond" },
+    { "id": "t6", "speaker": "GST", "text": "Yeah, yeah.", "backchannel": true },
+    { "id": "t7", "speaker": "GST", "text": "Because food security has to come first in a crisis, the land should grow food.", "topic": "food security", "shift": "follow_up" },
+    { "id": "t8", "speaker": "HOST", "text": "Hepta, last word.", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

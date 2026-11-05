@@ -117,8 +117,9 @@ export function numbers(text: string): Num[] {
     out.push({ value: v, unit: pct ?? cur ?? noun, raw: (cur ?? '') + digits + (after[0] ?? '').trimEnd(), index: m.index, ...(year ? { year: true } : {}) });
   }
   // Number words, read by the ported grammar, with the digits taken out first.
-  if (NUMBER_WORD.test(lower)) {
-    const wordsOnly = lower.replace(/[£$€]?\d[\d,.]*/g, ' ');
+  if (NUMBER_WORD.test(lower.replace(/\bnet zero\b/g, ''))) {
+    // "net zero" is a name, not a number.
+    const wordsOnly = lower.replace(/[£$€]?\d[\d,.]*/g, ' ').replace(/\bnet zero\b/g, ' ');
     for (const a of amounts(wordsOnly).found) {
       if (out.some((o) => o.value === a.n)) continue;
       const at = NUMBER_WORD.exec(lower)?.index ?? 0;

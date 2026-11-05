@@ -1,0 +1,23 @@
+{
+  "id": "h3-panel-social-media",
+  "title": "Held out: children and social media",
+  "mode": "panel",
+  "note": "Held-out set. An attack on a panelist's experience in words no cue lists, a protest that returns to the question, a moderator's move to an audience question, a nod.",
+  "speakers": {
+    "MOD": { "name": "Moderator", "role": "moderator", "wpm": 160 },
+    "MIN": { "name": "Minister", "role": "panelist", "wpm": 170 },
+    "CMP": { "name": "Campaigner", "role": "panelist", "wpm": 178 }
+  },
+  "turns": [
+    { "id": "t1", "speaker": "MOD", "text": "Tonight, social media and children. Minister, when will the age checks come in?", "topic": "social media", "shift": "none", "question": { "id": "q1", "to": "MIN" } },
+    { "id": "t2", "speaker": "MIN", "text": "The age checks will be in place by next September.", "topic": "social media", "shift": "none", "answers": "q1" },
+    { "id": "t3", "speaker": "CMP", "text": "You said last year they would be in place by this September.", "topic": "social media", "shift": "none" },
+    { "id": "t4", "speaker": "MIN", "text": "With respect, the campaigner has never had to run a government department.", "topic": "the campaigner", "shift": "diversion", "diversion": ["ad_hominem"] },
+    { "id": "t5", "speaker": "CMP", "text": "That's not an answer.", "topic": "social media", "shift": "follow_up" },
+    { "id": "t6", "speaker": "MOD", "text": "Let's bring in the audience question on screen time. How much screen time is too much for a ten year old?", "topic": "screen time", "shift": "natural", "question": { "id": "q2", "to": null } },
+    { "id": "t7", "speaker": "CMP", "text": "Most experts say no more than two hours a day.", "topic": "screen time", "shift": "none", "answers": "q2" },
+    { "id": "t8", "speaker": "MIN", "text": "Exactly.", "backchannel": true, "overlapMs": 150 },
+    { "id": "t9", "speaker": "MIN", "text": "And we will publish guidance for parents in the spring.", "topic": "screen time", "shift": "none" },
+    { "id": "t10", "speaker": "MOD", "text": "Hepta, what are you hearing?", "meta": true, "addressed": true, "hepta": "respond" }
+  ]
+}

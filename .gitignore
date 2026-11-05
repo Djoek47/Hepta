@@ -15,3 +15,4 @@ exports/
 .listen.mjs
 .studio.mjs
 apps/studio/public/app.js
+.debug.mjs

@@ -87,9 +87,11 @@ export type Turn = {
 export type ThreadView = {
   id: string;
   topic: string;
+  /** The words this line of thought has been talked about in, most used first (stems). */
   keys: string[];
-  /** Decays with a half-life (5 min); rises when the subject comes up again. */
+  /** Decays with a half-life (5 min); +1 while on air, +0.5 each time its words come up elsewhere. */
   weight: number;
+  mentions: number;
   /** Who opened it. */
   owner: string;
   openedMs: number;
@@ -162,6 +164,19 @@ export type StanceSeed = {
   evidence: string[];
 };
 
+/**
+ * What is on air. A diversion that turns on a person or on the other side's
+ * record puts that on air for a moment (`about`), without opening a line of
+ * thought; `resume` is the subject it left.
+ */
+export type Current = {
+  topic: string | null;
+  keys: string[];
+  speaker: string | null;
+  about?: { kind: 'person' | 'record'; by: string; target: string | null };
+  resume?: { topic: string; keys: string[] };
+};
+
 /** Everything a detector may read. A copy: holding it gives no way to change the conversation. */
 export type DetectState = {
   mode: Mode;
@@ -170,7 +185,7 @@ export type DetectState = {
   /** Recent finished utterances, oldest first. */
   turns: Turn[];
   /** The subject on air before this utterance. */
-  current: { topic: string | null; keys: string[]; speaker: string | null };
+  current: Current;
   threads: ThreadView[];
   questions: QuestionView[];
   claims: ClaimView[];
@@ -200,6 +215,8 @@ export type Judgment = {
   /** The subject of this utterance so far. */
   topic: string | null;
   topicKeys: string[];
+  /** Set when the utterance turns on a person or a record instead of the subject. */
+  about?: { kind: 'person' | 'record'; target: string | null };
   shiftType: ShiftType;
   diversion?: { type: DiversionType; confidence: number; questionId?: string; claimId?: string; why: string };
   /** The claim worth showing: a contradiction if there is one, else the first. */
