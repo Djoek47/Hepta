@@ -14,3 +14,5 @@ export * from './clip.js';
 export * from './stt/scripted.js';
 export * from './stt/index.js';
 export * from './audio.js';
+export * from './insights.js';
+export * from './threads.js';

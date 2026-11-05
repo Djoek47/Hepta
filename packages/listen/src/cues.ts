@@ -5,7 +5,7 @@
  * and a model-backed detector replaces them with judgment.
  */
 import { BACKCHANNEL } from '@intermenu/hepta/lines';
-import { words } from './text.js';
+import { sentences, words } from './text.js';
 
 const any = (res: RegExp[], s: string) => res.some((r) => r.test(s));
 const lower = (s: string) => s.toLowerCase().replace(/[’‘]/g, "'");
@@ -165,8 +165,7 @@ export function isQuestion(text: string): boolean {
 
 /** The question sentences in a text (a turn may hold a statement and a question). */
 export function questionSentences(text: string): string[] {
-  const parts = text.match(/[^.?!]+[.?!]?/g) ?? [text];
-  return parts.map((p) => p.trim()).filter((p) => p && isQuestion(p));
+  return sentences(text).filter((p) => isQuestion(p));
 }
 
 export const cues = {

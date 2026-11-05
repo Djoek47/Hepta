@@ -138,6 +138,11 @@ export function numbers(text: string): Num[] {
   return out.sort((a, b) => a.index - b.index);
 }
 
+/** Sentences, split at . ? ! followed by a space — never inside "4.1" or "2.6". */
+export function sentences(text: string): string[] {
+  return text.split(/(?<=[.?!])\s+/).map((x) => x.trim()).filter(Boolean);
+}
+
 /** Relative difference between two values, or 1 when one of them is zero. */
 export function relDiff(a: number, b: number): number {
   if (a === b) return 0;

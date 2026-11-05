@@ -13,6 +13,7 @@
  * The truth for every word is kept alongside, so the bench can score who was
  * heard against who spoke.
  */
+import { sentences } from '../text.js';
 import type { SttChunk, Word } from '../types.js';
 import type { Clip, ClipTurn } from '../clip.js';
 
@@ -66,7 +67,7 @@ export function rng(seed: number): () => number {
 }
 
 function sentencesOf(text: string): string[] {
-  return (text.match(/[^.?!]+[.?!]?/g) ?? [text]).map((s) => s.trim()).filter(Boolean);
+  return sentences(text);
 }
 
 export function simulate(clip: Clip, opts: SimOptions = {}): Simulation {

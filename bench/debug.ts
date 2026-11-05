@@ -33,3 +33,5 @@ for (const s of run.steps) {
 const m = run.listener.memory;
 console.log('\nthreads:', m.threads.map((t) => `${t.topic}(${t.weight.toFixed(2)}${t.onAir ? ' ON AIR' : ''})`).join(', '));
 console.log('questions:', m.questions.map((q) => `${q.id} ${q.by}→${q.to} [${q.status}${q.turnsSince ? ' ' + q.turnsSince + ' turns' : ''}] "${q.text}"`).join('\n           '));
+console.log('\ninsights:');
+for (const i of run.listener.insights) console.log(`  [${i.kind}${i.type ? ':' + i.type : ''}] ${i.text}${i.detail ? '\n      ' + i.detail : ''}`);

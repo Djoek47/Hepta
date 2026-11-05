@@ -13,7 +13,7 @@ describe('the simulated recognizer', () => {
   it('delivers growing partials and one final per sentence, in time order', () => {
     const sim = simulate(clip, { seed: 1 });
     const finals = sim.chunks.filter((c) => c.chunk.final);
-    const sentences = clip.turns.reduce((n, t) => n + ((t.text.match(/[^.?!]+[.?!]?/g) ?? [t.text]).filter((s) => s.trim()).length), 0);
+    const sentences = clip.turns.reduce((n, t) => n + t.text.split(/(?<=[.?!])\s+/).filter((s) => s.trim()).length, 0);
     expect(finals).toHaveLength(sentences);
     const times = sim.chunks.map((c) => c.chunk.heardToMs);
     expect(times).toEqual([...times].sort((a, b) => a - b));

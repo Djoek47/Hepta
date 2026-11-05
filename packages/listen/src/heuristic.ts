@@ -6,7 +6,8 @@
  */
 import { buildLexicon, topicsIn, type Lexicon, type TopicHit } from './lexicon.js';
 import { addressesHepta, adScore, asksForTheFloor, cues, isCrowd, isNod, isQuestion, mentionsHepta, questionSentences, refersToQuestion } from './cues.js';
-import { contentStems, jaccard, keyOverlap, numbers, relDiff, stem, words, endsInOpenNumber } from './text.js';
+import { contentStems, jaccard, keyOverlap, numbers, relDiff, sentences, stem, words, endsInOpenNumber } from './text.js';
+import { CORRECTION } from './memory.js';
 import type {
   ClaimJudgment, DetectState, Detector, DiversionType, Heard, Judgment, QuestionView, Reading, ShiftType,
 } from './types.js';
@@ -218,6 +219,15 @@ export class HeuristicDetector implements Detector {
       const hit = named.find((p) => p.name.endsWith(voc));
       if (hit) return hit.id;
     }
+    // A role's head word said to them ("…on track, minister, yes or no?"), when only one speaker has it.
+    const heads = new Map<string, string[]>();
+    for (const p of named) {
+      const head = p.name.split(/\s+/).pop()!;
+      if (head.length >= 4) heads.set(head, [...(heads.get(head) ?? []), p.id]);
+    }
+    for (const [head, ids] of heads) {
+      if (ids.length === 1 && new RegExp(`(^|[,.]\\s*)(the )?${escape(head)}\\s*(,|\\?|\\.|$)`).test(s)) return ids[0]!;
+    }
     return null;
   }
 
@@ -249,13 +259,17 @@ export class HeuristicDetector implements Detector {
     if (qs.length === 0 && !reask) return undefined;
     const q = qs[qs.length - 1] ?? text;
     const to = this.addressee(text, h, st);
+    // Put to someone by name who has not spoken yet: keep the name, and bind it when they do.
+    const voc = to === null ? /^([a-z][a-z ]{2,30}),/i.exec(text.trim())?.[1]?.toLowerCase() : undefined;
+    const toName = voc && !/^(panel|everyone|all of you|both of you|so|and|but|well|now|okay|look|tonight)$/.test(voc) ? voc : undefined;
     const keys = [...new Set(contentStems(q))];
-    const open = st.questions.filter((x) => x.status === 'open' && x.by !== h.speaker && (to === null || x.to === to));
+    // Asked again — by the same person or someone else — while still open.
+    const open = st.questions.filter((x) => x.status === 'open' && x.to !== h.speaker && (to === null || x.to === to));
     const repeat = open
       .map((x) => ({ x, o: Math.max(jaccard(keys, x.keys), keyOverlap(q, x.keys)) }))
       .filter((y) => reask || y.o >= 0.25)
       .sort((a, b) => b.o - a.o || b.x.askedMs - a.x.askedMs)[0];
-    return { text: q, to, keys, ...(repeat ? { repeatOf: repeat.x.id } : {}) };
+    return { text: q, to, keys, ...(toName ? { toName } : {}), ...(repeat ? { repeatOf: repeat.x.id } : {}) };
   }
 
   /** A "Yes." right after a yes-or-no question put to this speaker is an answer, not a nod. */
@@ -267,14 +281,22 @@ export class HeuristicDetector implements Detector {
 
   /** The open question this sentence answers, if any. */
   answering(text: string, h: Heard, st: DetectState): QuestionView | undefined {
-    const open = st.questions.filter((q) => q.status === 'open' && q.by !== h.speaker && (q.to === h.speaker || q.to === null));
+    const open = st.questions.filter((q) => (q.status === 'open' || q.status === 'dodged') && q.by !== h.speaker && (q.to === h.speaker || q.to === null));
     // The best answer wins; between equals, the question asked last.
     let best: { q: QuestionView; s: number } | undefined;
     for (const q of open) {
-      const s = answerScore(text, q, null) + 0.05 * keyOverlap(text, q.keys);
+      const s = answerScore(text, q, { adjacent: this.firstTurnAfter(q, h, st), onTopic: !st.current.about && (q.topic === null || q.topic === st.current.topic) })
+        + 0.05 * keyOverlap(text, q.keys);
       if (s >= 0.5 && (!best || s >= best.s)) best = { q, s };
     }
     return best?.q;
+  }
+
+  /** Nobody else has spoken since the question: this is the addressee's first turn after it. */
+  private firstTurnAfter(q: QuestionView, h: Heard, st: DetectState): boolean {
+    const i = st.turns.findIndex((t) => t.utteranceId === q.utteranceId);
+    if (i < 0) return false;
+    return st.turns.slice(i + 1).every((t) => t.ignored || t.speaker === h.speaker || t.speaker === q.by);
   }
 
   // ------------------------------------------------------------------- claims
@@ -282,12 +304,11 @@ export class HeuristicDetector implements Detector {
   claimsIn(text: string, h: Heard, st: DetectState, topicKeys: string[]): ClaimJudgment[] {
     if (!h.final && endsInOpenNumber(text)) return []; // "four…" may still become "four hundred"
     const out: ClaimJudgment[] = [];
-    const sentences = text.match(/[^.?!]+[.?!]?/g) ?? [text];
     let prevContent: string[] = [];
-    for (const sentence of sentences) {
+    for (const sentence of sentences(text)) {
       const sent = sentence.trim();
       if (!sent) continue;
-      const lastSubject = prevContent;
+      let lastSubject = prevContent;
       prevContent = words(sent).filter((w) => contentStems(w).length > 0 && !VERBS.has(w));
       if (isQuestion(sent) || REPORTED.test(sent)) continue;
       for (const clause of sent.split(/,\s+|;\s+|\s+(?:and|but|because|so)\s+/i)) {
@@ -302,7 +323,9 @@ export class HeuristicDetector implements Detector {
         const after = words(lowerClause.slice(Math.max(0, idx)))
           .filter((w) => contentStems(w).length > 0 && !VERBS.has(w) && !/^\d/.test(w) && !/^(percent|cent|pounds|dollars|euros|billion|million|thousand)$/.test(w));
         const unitNoun = n.unit && !/[%£$€]/.test(n.unit) ? n.unit : undefined;
+        // No subject in this clause ("…, no sorry, 400 like we said"): the one just named carries over.
         const subjectWords = before.length ? before.slice(-3) : unitNoun ? [unitNoun] : after.length ? after.slice(0, 2) : lastSubject.slice(-2);
+        lastSubject = subjectWords;
         const subject = subjectWords.join(' ') || topicKeys[0] || 'figure';
         const keys = [...new Set([...subjectWords, ...(unitNoun && !subjectWords.includes(unitNoun) ? [unitNoun] : []), ...after.slice(0, 2)].map(stem))];
         const falling = FALLING.test(lowerClause.slice(0, Math.max(0, idx)));
@@ -313,11 +336,11 @@ export class HeuristicDetector implements Detector {
         };
         const k = this.contradicts(c, clause, h, st);
         if (k) c.contradicts = k;
-        out.push(c);
-        break; // one claim per clause
+        out.push(c); // one claim per clause: its first figure
       }
     }
-    return out;
+    // Said twice in one breath ("650, no sorry, 400 like we said"): the last word on a subject stands.
+    return out.filter((c, i) => !out.slice(i + 1).some((d) => jaccard(c.keys, d.keys) >= 0.5 || d.subject === c.subject));
   }
 
   private contradicts(c: ClaimJudgment, clause: string, h: Heard, st: DetectState): ClaimJudgment['contradicts'] | undefined {
@@ -351,7 +374,9 @@ export class HeuristicDetector implements Detector {
   /** Diversions the words show by themselves, given what this speaker said before. */
   markedDiversion(text: string, h: Heard, st: DetectState, answered: QuestionView | undefined, contradiction: ClaimJudgment | undefined): Judgment['diversion'] | undefined {
     const cand: NonNullable<Judgment['diversion']>[] = [];
-    if (contradiction?.contradicts?.kind === 'changed_claim' && contradiction.contradicts.claimId) {
+    // Correcting oneself out loud is not changing the story.
+    const corrected = CORRECTION.test(text);
+    if (!corrected && contradiction?.contradicts?.kind === 'changed_claim' && contradiction.contradicts.claimId) {
       cand.push({ type: 'changed_claim', confidence: 0.8, why: 'same speaker, same subject, a different number', claimId: contradiction.contradicts.claimId });
     }
     if (contradiction?.contradicts?.kind === 'moving_goalposts' && contradiction.contradicts.claimId) {
@@ -362,8 +387,11 @@ export class HeuristicDetector implements Detector {
         && (keyOverlap(text, c.keys) >= 0.34 || keyOverlap(text, st.current.keys.slice(0, 6)) > 0));
       if (commitment) cand.push({ type: 'moving_goalposts', confidence: 0.7, why: 'a weaker test for the same commitment', claimId: commitment.id });
     }
-    if (cues.adHominem(text)) cand.push({ type: 'ad_hominem', confidence: 0.7, why: 'about the person, not the point' });
-    if (cues.whatabout(text) && !answered) cand.push({ type: 'whataboutism', confidence: 0.65, why: "answered with the other side's record" });
+    // An attack made while a question is open leaves that question open: say which.
+    const open = st.questions.filter((q) => q.status === 'open' && q.to === h.speaker && q.by !== h.speaker).pop();
+    const pending = open && !answered ? { questionId: open.id } : {};
+    if (cues.adHominem(text)) cand.push({ type: 'ad_hominem', confidence: 0.7, why: 'about the person, not the point', ...pending });
+    if (cues.whatabout(text) && !answered) cand.push({ type: 'whataboutism', confidence: 0.65, why: "answered with the other side's record", ...pending });
     cand.sort((a, b) => b.confidence - a.confidence);
     return cand[0];
   }
@@ -446,30 +474,62 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-const POLAR_ANSWER = /^(yes|no|yeah|yep|nope|absolutely|definitely|mostly|partly|not (yet|really|at all)|of course|certainly|we will|we won'?t|we are|we're|we aren'?t|it will|it won'?t|it should|it shouldn'?t|it is|it isn'?t|i will|i won'?t|we have no plans|no plans|there will|there won'?t)\b/i;
+const POLAR_START = /^(yes|no|yeah|yep|nope|absolutely|definitely|mostly|partly|not (yet|really|at all|quite)|of course|certainly|no plans|we have no plans|there are no plans)\b/i;
+const AUX = ['are', 'is', 'am', 'was', 'were', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'have', 'has', 'shall', 'may', 'might'];
+/** The auxiliary a yes-or-no question turns on: "are you on track" → are. */
+function auxOf(q: string): string | null {
+  const body = q.toLowerCase().replace(/^[a-z ]{2,30},\s*/, '').replace(/^(and|so|but|then|now|okay)\s+/, '');
+  const m = /^([a-z']+)\b/.exec(body);
+  return m && AUX.includes(m[1]!) ? m[1]! : null;
+}
+/** "We are", "we're not", "it should", "I would": the answer takes up the question's own verb. */
+function takesUp(text: string, aux: string): boolean {
+  const s = text.toLowerCase().trim();
+  const same: Record<string, string[]> = { are: ['are', "'re", 'am', "'m", 'is'], is: ['is', "'s"], am: ['am', "'m"], do: ['do', 'does'], does: ['does', 'do'],
+    did: ['did'], will: ['will', "'ll", "won't"], would: ['would', "'d", "wouldn't"], can: ['can', "can't"], could: ['could', "couldn't"],
+    should: ['should', "shouldn't"], have: ['have', "'ve", 'has'], has: ['has', 'have', "'s"], was: ['was'], were: ['were'], shall: ['shall', 'will'] };
+  const forms = same[aux] ?? [aux];
+  return forms.some((f) => new RegExp(`^(well,? |look,? )?(we|i|it|they|you|he|she|that|this|there)\\s*${f.replace("'", "'?")}(n'?t| not)?\\b`).test(s));
+}
 const FUNDING_ANSWER = /\b(paid for by|funded (by|through|from)|pay for (it|them|this) (by|through|with)|by closing|by raising|by cutting|comes? (from|out of)|through (a|the|new)|out of (the|our))\b/i;
 
-/** How well a sentence answers a question. Crude by design: the model tier does this properly. */
-export function answerScore(text: string, q: QuestionView, topic: string | null): number {
+/**
+ * How well a sentence answers a question. Crude by design — the model tier
+ * does this properly — but checkable where the question is: a yes-or-no
+ * question wants yes, no, or its own verb back; "how much" wants a number;
+ * "how will you pay" wants a source; "which, X or Y" wants X or Y. An open
+ * question is answered by the next turn of the person it was put to, if that
+ * turn stays on the subject and does not open with a deflection.
+ */
+export function answerScore(text: string, q: QuestionView, ctx: { adjacent: boolean; onTopic: boolean } = { adjacent: false, onTopic: false }): number {
   const t = text.trim();
   if (cues.deflect(t) && !FUNDING_ANSWER.test(t)) return 0.1;
+  // Pointing at the other side's record, or at the person, answers nothing.
+  if (cues.whatabout(t) || cues.adHominem(t)) return 0.1;
   const qs = q.text.toLowerCase();
   const overlap = Math.max(keyOverlap(t, q.keys), jaccard(contentStems(t), q.keys));
-  let s = overlap >= 0.34 ? 0.55 : overlap > 0 ? 0.35 : 0.15;
+  const aux = auxOf(q.text);
   if (/\bhow (will|would|do|does|is|are|can)\b.*\b(pay|fund|funded|afford|financ)/.test(qs) || /\bwhere does the money\b|\bmoney .* come from\b/.test(qs)) {
-    s = FUNDING_ANSWER.test(t) ? 0.9 : 0.1;
-  } else if (/\bwhich is it\b|\b(\w+) or (\w+)\?$/.test(qs)) {
-    const opts = /(\w+) or (\w+)\??$/.exec(qs);
-    s = opts && (new RegExp(`\\b(${opts[1]}|${opts[2]})\\b`, 'i').test(t) || numbers(t).length > 0) ? 0.85 : 0.1;
-  } else if (/^(\w+ )?(how (much|many|fast|big|high|long)|what is the (figure|rate|number))/.test(qs.replace(/^[a-z ]+, /, ''))) {
-    s = numbers(t).some((n) => !n.year) ? 0.85 : Math.min(s, 0.3);
-  } else if (/^(and |so |but )?([a-z ]+, )?(are|is|do|does|did|will|would|can|could|should|have|has|was|were)\b/.test(qs) || /\byes or no\b/.test(qs)) {
-    s = POLAR_ANSWER.test(t) ? 0.9 : Math.min(s, 0.3);
-  } else if (/^(and )?[a-z ]{1,20}\?$/.test(qs.trim())) {
-    // "And inflation?": a subject alone. Answered by talking about it.
-    s = keyOverlap(t, q.keys) >= 0.5 ? 0.85 : 0.2;
-  } else if (topic !== null && topic === q.topic) {
-    s += 0.15;
+    return FUNDING_ANSWER.test(t) ? 0.9 : 0.1;
   }
+  const yesNo = /\byes or no\b/.test(qs);
+  const polarAux = aux ?? (yesNo ? auxOf(qs.replace(/^[^,]*?\b(are|is|will|would|do|does|did|can|could|should|have|has)\b/, '$1')) : null);
+  if (yesNo || (aux && !/\b(\w+) or (\w+)\?$/.test(qs))) {
+    return POLAR_START.test(t) || (polarAux !== null && takesUp(t, polarAux)) ? 0.9 : 0.2;
+  }
+  if (/\bwhich is it\b|\b(\w+) or (\w+)\?$/.test(qs)) {
+    const opts = /(\w+) or (\w+)\??$/.exec(qs);
+    return opts && (new RegExp(`\\b(${opts[1]}|${opts[2]})\\b`, 'i').test(t) || numbers(t).length > 0) ? 0.85 : 0.1;
+  }
+  if (/^(\w+ )?(how (much|many|fast|big|high|long)|what is the (figure|rate|number))/.test(qs.replace(/^[a-z ]+, /, ''))) {
+    return numbers(t).some((n) => !n.year) ? 0.85 : 0.2;
+  }
+  if (/^(and )?[a-z ]{1,20}\?$/.test(qs.trim())) {
+    // "And inflation?": a subject alone. Answered by talking about it.
+    return keyOverlap(t, q.keys) >= 0.5 ? 0.85 : 0.2;
+  }
+  // An open question: the next turn of the person asked, on the subject, is its answer.
+  let s = overlap >= 0.34 ? 0.55 : overlap > 0 ? 0.35 : 0.15;
+  if (ctx.adjacent && ctx.onTopic && words(t).length >= 4) s = Math.max(s, 0.6);
   return Math.min(1, s);
 }

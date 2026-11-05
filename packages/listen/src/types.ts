@@ -104,8 +104,10 @@ export type QuestionStatus = 'open' | 'answered' | 'dodged';
 export type QuestionView = {
   id: string;
   by: string;
-  /** Who it was put to. Null when put to everyone. */
+  /** Who it was put to. Null when put to everyone, or to someone not yet heard. */
   to: string | null;
+  /** The name it was put to, kept until that speaker is heard ("Minister, …" before the minister speaks). */
+  toName?: string;
   text: string;
   keys: string[];
   topic: string | null;
@@ -223,7 +225,7 @@ export type Judgment = {
   claim?: ClaimJudgment;
   /** Every claim in the utterance. */
   claims?: ClaimJudgment[];
-  question?: { text: string; to: string | null; keys: string[]; repeatOf?: string };
+  question?: { text: string; to: string | null; toName?: string; keys: string[]; repeatOf?: string };
   /** The id of an open question this utterance answers. */
   answers?: string;
   addressedToHepta: boolean;

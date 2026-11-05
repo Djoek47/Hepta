@@ -73,7 +73,8 @@ export class Session {
       this.listener = listener;
       listener.on((e) => {
         if (e.type === 'heard') this.send({ type: 'heard', heard: e.heard });
-        else this.send({ type: 'decision', decision: e.decision, speakers: listener.speakers.list() });
+        else if (e.type === 'insight') this.send({ type: 'insight', insight: e.insight });
+        else this.send({ type: 'decision', decision: e.decision, speakers: listener.speakers.list(), threads: listener.memory.threads, questions: listener.memory.questions });
       });
       const provider = this.providerFor(m, this.clip);
       const stt = await provider.open({ sampleRate: m.sampleRate ?? 16_000 });

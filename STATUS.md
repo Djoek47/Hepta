@@ -173,3 +173,54 @@ cost argument without a cost word) — the kind of call the Haiku backend is the
 questions within a subject, returns, ad hominem on air and back, answers keep their subject).
 
 **Next:** step 5 — diversions, dodged questions (N turns), contradictions with quotes.
+
+## Step 5 — diversions, dodged questions, contradictions ✅
+
+**Questions.** A ledger of every question: who asked, who it was put to (by name — in the sentence, or in the
+sentence before it in the same turn; held by name until that person first speaks), how often it has been asked,
+and how many of the addressee's turns have passed without an answer. **A question is dodged when the person it
+was put to takes N turns (default 2, `dodgeTurns`) without answering it.** A turn ends when someone else speaks;
+nods and ads are not turns; asking again keeps the count; an answer after the dodge still closes it. What counts
+as an answer is checkable where the question is: yes/no wants yes, no, or its own verb back ("are you on track?"
+is not answered by "we will halve waiting lists"); "how will you pay" wants a source; "which is it, three or
+five" wants one of them; "how much" wants a number; an open question is answered by the addressee's next turn if
+it stays on the subject and neither deflects nor attacks. Asking the chair for the floor is not a question.
+
+**Diversions** (each with the quotes it rests on — who said what, when, in their words):
+deflection (an open question, a different answer) · whataboutism · ad hominem · question dodged (the count above)
+· moving the goalposts (a commitment restated against a weaker test, or with a different target or deadline) ·
+changed claim (same speaker, same subject, a different figure, ≥25% apart — quote both). An attack made while a
+question is open says the question is still open.
+
+**Claims.** Extracted with speaker, time, subject, value and unit, one per clause; the last word on a subject in
+one breath stands ("650, no sorry, 400 like we said" contradicts nothing). **A contradiction is recorded beside
+the claim it contradicts, never over it**; it is settled only by the speaker's own correction out loud ("sorry, I
+meant…") or by the operator (`Memory.settle`). A revision under 25% updates the claim. Claims are checked against
+the evidence pack (tolerance per item, default 15%).
+
+**Insight cards** (`insights.ts`), in the brand's voice — they report, they do not accuse:
+"S2 answered with the shadow minister’s record. S3’s question is still open." ·
+"“How is it funded?” asked by S3 at 00:13, not answered." · "S2 said 3% at 00:06, now says 5%." ·
+"S2 said 3% on unemployment; the evidence pack says Unemployment rate 4.1%." · "S1 asked again: …".
+The same diversion carried into the next sentence of one turn updates its card instead of adding one.
+
+Fixed on the way: sentences were split inside decimals ("4.1" → "4." + "1 percent") in the detector and in the
+simulator; a claim's subject now carries to the next clause; every clause's claim is extracted (a `break` cut
+sentences off after their first figure); "…yes or no?" is a yes/no question, not a choice between "yes" and "no".
+
+| scripted set (dev) | step 4 | step 5 |
+| --- | --- | --- |
+| dodged questions P / R | — / 0.00 (no counting) | **1.00 / 1.00** (3 of 3, 0 false) |
+| contradictions P / R | 1.00 / 0.88 | 1.00 / 0.88 |
+| diversion P / R | 1.00 / 1.00 | 1.00 / 1.00 |
+| topic shift P / R | 1.00 / 0.95 | 1.00 / 0.95 |
+
+The contradiction still missed is semantic ("most companies quietly dropped it" against "92% kept it": no figure
+to compare) — the Haiku backend's `contradicts` question is there for that. Same caution as step 4: these
+clips are a development set; the held-out set and real clips decide.
+
+**Tests:** 281 passing (11 new: dodge counting, nods not counted, re-asks, names bound late, what counts as an
+answer, contradictions kept beside, self-correction settles, revisions, one breath, evidence cards).
+
+**Next:** step 6 — the timing state machine (listen / note / ready / respond) on the ported Lines rules, readings
+on fragments with provisional cards, and response cards written by Claude Sonnet.
