@@ -36,7 +36,7 @@ export class Memory {
   private seq = { q: 0, c: 0, t: 0, u: 0 };
   private lastMs = 0;
   /** The turn in progress: one speaker's run of sentences, until someone else speaks. */
-  private turn: { speaker: string; startedMs: number; answered: Set<string> } | null = null;
+  private turn: { speaker: string; startedMs: number; answered: Set<string>; reasked?: Set<string> } | null = null;
 
   /**
    * @param dodgeTurns a question put to someone who then takes this many turns
@@ -95,8 +95,14 @@ export class Memory {
     if (j.question) {
       const again = j.question.repeatOf ? this.questions.find((x) => x.id === j.question!.repeatOf) : undefined;
       if (again) {
-        again.asks++;
-        out.reasked = again;
+        // Asked again once per turn, however many sentences the asking takes.
+        const t = this.turn!;
+        t.reasked ??= new Set();
+        if (!t.reasked.has(again.id)) {
+          t.reasked.add(again.id);
+          again.asks++;
+          out.reasked = again;
+        }
       } else {
         const q: QuestionView = {
           id: `q${++this.seq.q}`, by: h.speaker, to: j.question.to, text: j.question.text, keys: j.question.keys,

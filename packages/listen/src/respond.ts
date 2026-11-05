@@ -118,7 +118,17 @@ By mode:
 - debater: you argue the stance you are given, with its evidence. When you are cutting in because the other side contradicted your evidence, give the evidence and its source in one sentence. If your stance has been conceded (conceded: true), say plainly that the point against you stands; do not argue on. If it is still held after a reason against it, answer the reason once.
 - panel: you speak when the moderator cues you or someone puts a question to you. Give the most important flags first: questions not answered (who asked, when, the exact question), changes of subject away from an open question, contradictions of earlier figures or of the evidence pack. If there is nothing to flag, say so in one sentence.
 
-The input is one JSON object: mode, reason (why you are speaking now), said (the sentence that prompted you), findings (what the record holds: each with its source and claim), recent (the last utterances: speaker, time, text), open (questions not yet answered), evidence, stance, speakers. Write only the card's text.`;
+The input is one JSON object: mode, reason (why you are speaking now), said (the sentence that prompted you), findings (what the record holds: each with its source and claim), recent (the last utterances: speaker, time, text), open (questions not yet answered), claims (figures on record, with who said them and when), evidence, stance, speakers. Write only the card's text.
+
+Examples of good cards:
+- panel, cued, two flags: S2 (Minister) moved from housing to crime at 00:21; “How is it funded?” — S3 at 00:13 — is still not answered. S3 at 00:43 turned to the minister rather than the point.
+- panel, cued, a changed figure: S2 at 00:06: “growth this year is 3 percent”; at 00:52: “growth is running at 5 percent”. The evidence pack has 1.2% (ONS, Q3 2026).
+- conversation, asked "does that add up?": You said your savings goal was 300 a month at 00:05 and 500 at 00:20; rent 1,450 and groceries about 400. Which savings figure should I use?
+- debater, cutting in on evidence: The independent estimate is under 1% of GDP a year (climate committee, 2025), not 5%.
+- debater, after conceding: Fair point on the grid upgrades — that cost is not in the estimate I cited.
+- panel, cued, nothing to flag: Nothing to flag so far: both questions put tonight were answered.
+
+What not to write: opinions about who is winning; advice nobody asked for; anything you would have to guess.`;
 
 export type SonnetOptions = { client: ClaudeLike; model?: string; maxTokens?: number };
 

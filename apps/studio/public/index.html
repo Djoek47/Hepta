@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hepta Listen</title>
+<link rel="icon" type="image/png" href="brand/hepta-favicon-64.png">
+<link rel="apple-touch-icon" href="brand/hepta-app-icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <svg class="mark" viewBox="-6 -6 112 112" aria-hidden="true">
+      <g class="ring" fill="none" stroke-linecap="round">
+        <path class="arc live" d="M35.5 10.6 A42 42 0 0 1 64.5 10.6" stroke-width="7"/>
+        <path class="arc" d="M71.8 14.1 A42 42 0 0 1 89.9 36.8" stroke-width="5.5"/>
+        <path class="arc" d="M91.7 44.6 A42 42 0 0 1 85.2 72.9" stroke-width="4" opacity=".55"/>
+        <path class="arc" d="M80.2 79.2 A42 42 0 0 1 54.0 91.8" stroke-width="6"/>
+        <path class="arc" d="M46.0 91.8 A42 42 0 0 1 19.8 79.2" stroke-width="4" opacity=".55"/>
+        <path class="arc" d="M14.8 72.9 A42 42 0 0 1 8.3 44.6" stroke-width="3" opacity=".35"/>
+        <path class="arc" d="M10.1 36.8 A42 42 0 0 1 28.2 14.1" stroke-width="5"/>
+        <path class="wave w1" d="M34.5 23.2 A31 31 0 0 1 65.5 23.2" stroke-width="5"/>
+        <path class="wave w2" d="M40.8 31.1 A21 21 0 0 1 59.2 31.1" stroke-width="4.5"/>
+      </g>
+      <circle class="listener" cx="50" cy="50" r="8"/>
+    </svg>
+    <span class="word">Hepta</span><span class="sub">Listen</span>
+  </div>
+  <div class="controls">
+    <div class="seg" role="radiogroup" aria-label="Mode" id="mode">
+      <button role="radio" data-v="conversation">Conversation</button>
+      <button role="radio" data-v="debater">Debater</button>
+      <button role="radio" data-v="panel">Panel</button>
+    </div>
+    <label class="pick">Input
+      <select id="input">
+        <option value="script">Scripted clip</option>
+        <option value="mic">Microphone</option>
+        <option value="file">File</option>
+        <option value="url">URL</option>
+      </select>
+    </label>
+    <label class="pick" id="clipPick">Clip <select id="clip"></select></label>
+    <label class="pick" id="speedPick">Speed
+      <select id="speed"><option value="1">1×</option><option value="2">2×</option><option value="4" selected>4×</option><option value="8">8×</option></select>
+    </label>
+    <label class="pick" id="filePick" hidden>File <input type="file" id="file" accept="audio/*,video/*"></label>
+    <label class="pick grow" id="urlPick" hidden>URL <input type="url" id="url" placeholder="https://…/debate.mp4"></label>
+    <label class="pick">Jev <select id="backend"><option value="heuristic">Heuristic</option><option value="jev-haiku">Claude Haiku</option></select></label>
+    <label class="pick">Writer <select id="writer"><option value="sonnet">Claude Sonnet</option><option value="template">Template</option></select></label>
+    <button class="go" id="go">Start</button>
+    <button class="ghost" id="cue" title="Cue Hepta by hand, as a moderator would">Cue Hepta</button>
+    <button class="ghost" id="export">Export JSON</button>
+    <button class="ghost icon" id="theme" title="Light / dark" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<details class="setup" id="setup">
+  <summary>Setup — speakers, stance, evidence</summary>
+  <div class="setup-grid">
+    <section>
+      <h3>Speakers</h3>
+      <p class="hint">Named as they first speak. Give the moderator the moderator role: in a panel Hepta answers the moderator's cue.</p>
+      <div id="speakerEdit" class="speaker-edit"></div>
+    </section>
+    <section>
+      <h3>Debater stance</h3>
+      <label>Seed topic <input id="stTopic" placeholder="net zero cost"></label>
+      <label>Words for it <input id="stKeys" placeholder="net zero, cost, gdp"></label>
+      <label>Position <textarea id="stPos" rows="2" placeholder="Net zero by 2050 is affordable: under 1% of GDP a year."></textarea></label>
+      <label>Confidence <input id="stConf" type="range" min="0.4" max="1" step="0.05" value="0.8"><output id="stConfOut">0.80</output></label>
+    </section>
+    <section>
+      <h3>Evidence pack</h3>
+      <p class="hint">One per line: <code>subject | words | value | unit | text | source</code></p>
+      <textarea id="evidence" rows="5" placeholder="unemployment | unemployment | 4.1 | % | Unemployment rate 4.1% | ONS, Sept 2026"></textarea>
+    </section>
+    <section>
+      <h3>Options</h3>
+      <label class="check"><input type="checkbox" id="autoSpeak"> Speak responses aloud (TTS)</label>
+      <p class="hint">Off by default. Hepta answers on screen; a nod does not stop it speaking, “wait” does.</p>
+      <p class="hint" id="keysLine"></p>
+    </section>
+  </div>
+</details>
+
+<main class="grid">
+  <section class="left">
+    <article class="response" id="response" aria-live="polite">
+      <header>
+        <span class="label">Hepta would say</span>
+        <span class="state" id="state" data-s="listen"><i></i><b>Listen</b></span>
+      </header>
+      <p class="say" id="say">Nothing yet. Start a clip, the microphone or a file.</p>
+      <p class="why" id="why"></p>
+      <div class="cites" id="cites"></div>
+      <footer>
+        <button class="ghost small" id="speak">Speak</button>
+        <span class="marks" id="respMarks"></span>
+        <span class="lat" id="respLat"></span>
+      </footer>
+    </article>
+    <div class="media" id="mediaBox" hidden><video id="player" controls playsinline></video></div>
+    <section class="transcript" id="transcript" aria-label="Live transcript"></section>
+  </section>
+  <aside class="right">
+    <section class="panel threads">
+      <h2>Lines of thought</h2>
+      <ol id="threads" class="thread-list"></ol>
+      <h2>Questions</h2>
+      <ol id="questions" class="q-list"></ol>
+    </section>
+    <section class="panel insights">
+      <h2>Insights</h2>
+      <ol id="insights" class="cards"></ol>
+    </section>
+  </aside>
+</main>
+<footer class="status" id="status"><span id="conn">connecting…</span><span id="stt"></span><span id="stats"></span></footer>
+<div class="toast" id="toast" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

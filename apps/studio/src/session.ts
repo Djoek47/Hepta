@@ -5,7 +5,7 @@
  * clip needs no audio at all.
  */
 import {
-  Listener, type Clip, type EvidenceItem, type JevDecision, type Mode, type SpeakerRole, type StanceSeed,
+  exportSession, Listener, MARKS, type Clip, type EvidenceItem, type JevDecision, type Mark, type MarkKind, type Mode, type SpeakerRole, type StanceSeed,
   type SttProvider, type SttSession, type HaikuTiming,
 } from '@hepta/listen';
 import { detectorFor, responderFor, scriptedFor, sttFor, type Env } from './config.js';
@@ -28,7 +28,11 @@ export type ClientMessage =
   | StartMessage
   | { type: 'stop' }
   | { type: 'name'; speaker: string; name?: string; role?: SpeakerRole }
-  | { type: 'speaking'; on: boolean };
+  | { type: 'speaking'; on: boolean }
+  | { type: 'mark'; target: string; on: Mark['on']; mark: MarkKind; note?: string }
+  | { type: 'cue' }
+  | { type: 'settle'; claimId: string }
+  | { type: 'export' };
 
 export type Send = (msg: Record<string, unknown>) => void;
 
@@ -38,6 +42,8 @@ export class Session {
   /** Audio time of the last chunk, and when it arrived: the clock a held answer waits on. */
   private heardTo = { audioMs: 0, wallMs: 0, speed: 1 };
   private ticker: ReturnType<typeof setInterval> | null = null;
+  private readonly marks: Mark[] = [];
+  private meta: Record<string, unknown> = {};
   private clip: Clip | null = null;
   private readonly timings: HaikuTiming[] = [];
 
@@ -54,6 +60,21 @@ export class Session {
     if (msg.type === 'start') return this.start(msg);
     if (msg.type === 'stop') return this.stop();
     if (msg.type === 'speaking') { this.listener?.setSpeaking(msg.on); return; }
+    if (msg.type === 'mark') {
+      if (!MARKS.includes(msg.mark)) return;
+      const i = this.marks.findIndex((m) => m.target === msg.target);
+      const mark: Mark = { target: msg.target, on: msg.on, mark: msg.mark, ...(msg.note ? { note: msg.note.slice(0, 500) } : {}), at: new Date().toISOString() };
+      if (i >= 0) this.marks[i] = mark; else this.marks.push(mark);
+      this.send({ type: 'marked', mark });
+      return;
+    }
+    if (msg.type === 'cue') { this.listener?.cue(); return; }
+    if (msg.type === 'settle') { if (this.listener?.settle(msg.claimId)) this.send({ type: 'settled', claimId: msg.claimId, claims: this.listener.memory.claims }); return; }
+    if (msg.type === 'export') {
+      if (!this.listener) { this.send({ type: 'error', message: 'nothing to export yet' }); return; }
+      this.send({ type: 'export', data: exportSession(this.listener, this.meta, this.marks) });
+      return;
+    }
     if (msg.type === 'name' && this.listener) {
       this.listener.name(msg.speaker, msg.name, msg.role);
       this.send({ type: 'speakers', speakers: this.listener.speakers.list() });
@@ -104,6 +125,8 @@ export class Session {
         else if (e.type === 'open') this.send({ type: 'status', stt: 'open', provider: provider.name });
         else if (e.type === 'close') this.send({ type: 'status', stt: 'closed', provider: provider.name, ...(e.reason ? { reason: e.reason } : {}) });
       });
+      this.marks.length = 0;
+      this.meta = { input: m.input, stt: provider.name, responder: responderFor(m.responder, this.env).name, startedAt: new Date().toISOString(), ...(this.clip ? { clip: this.clip.id } : {}), ...(m.speed ? { speed: m.speed } : {}) };
       this.send({ type: 'started', mode, input: m.input, backend: listener.detector.name, stt: provider.name, responder: responderFor(m.responder, this.env).name, ...(this.clip ? { clip: { id: this.clip.id, title: this.clip.title } } : {}) });
     } catch (err) {
       this.send({ type: 'error', message: String((err as Error)?.message ?? err) });

@@ -278,3 +278,47 @@ retracted, the pyramid ledger, writer fallback, the Sonnet request).
 
 **Next:** step 7 — the operator UI: modes, inputs, live transcript with Jev tags, threads, cards, the response
 card with READY/RESPOND, TTS, tuning marks and export.
+
+## Step 7 — the operator UI, modes, tuning and export ✅
+
+`npm start` → http://127.0.0.1:7474 (`apps/studio`). One screen, built for a broadcast operator:
+
+- **Response card** at the top: what Hepta would say now, streamed as it is written, with the exact quotes it
+  cites, why the timing chose this moment, and how long it took (first words, whole card). The **state light**:
+  LISTEN (grey) · NOTE · READY (red ring, pulsing) · RESPOND (solid On-Air red). **Speak** reads it aloud;
+  "speak responses aloud" is off by default. While it speaks, a nod keeps it going and "wait" stops it.
+- **Live transcript**, coloured by speaker (muted hues — red is reserved for what is live), names and roles,
+  partial lines in grey until final, nods and ads/crowd dimmed, and the Jev tags inline: subject, shift
+  ("follow-up · from travel"), diversion, claims (≠ for a contradiction), "to Hepta", who did not answer what,
+  the 2–3 readings still alive on a partial, and the backend's latency.
+- **Lines of thought**: each thread's weight (5-minute half-life), who opened it, the one on air lit red; faded
+  ones grey out. **Questions** not yet answered, with live timers — "asked 1:09 ago by S3 to S2 — not answered ·
+  asked 3× · 2 turns since".
+- **Insight cards**: provisional (dashed) → confirmed or retracted (struck through); a red edge while fresh
+  (20 s), then history.
+- **Modes**: Conversation / Debater / Panel. **Inputs**: scripted clip (1–8×, no keys), microphone, a file or a
+  URL played in the page (a TV clip plays in the page while it is heard). Live inputs are disabled, with the
+  reason shown, until a speech key exists. **Backends**: heuristic or Claude Haiku; **writer**: Sonnet or
+  template. **Setup**: speaker names and roles (the moderator role matters in a panel), debater seed topic,
+  stance and confidence, an evidence pack (one item per line). **Cue Hepta** cues it by hand.
+- **Tuning marks** on every final decision, card and response: good · should have flagged · false flag ·
+  too early · too late. **Export JSON** (`hepta-listen-session/1`): transcript, every decision, cards, responses
+  with their pyramid ledgers, threads, questions, claims, stance replies, marks, and latency stats. The terminal
+  runner (`npm run listen`) writes the same format.
+- Light and dark themes (system, or the ◐ toggle); the spinning mark turns its seven threads while listening and
+  pulses its waves on RESPOND; the centre dot — the listener — never moves (brand rule); reduced motion respected.
+  At phone width the controls stack and the bar scrolls away; no horizontal scroll.
+
+**Checked in a real browser** (Playwright, Chromium): clip 01 at 8× end to end — transcript, 5 cards, the
+response, threads, questions, a mark, and an export whose response carries its ledger (goal → findings → plan
+→ answer); no page errors; light, dark and phone width. **`npm run e2e:capture`**: a WAV chosen in the File input
+plays in the page and reaches the studio as 3.02 s of 16 kHz PCM over 2.96 s of wall time — real speed, end to
+end. Screens: `docs/screens/`.
+
+Fixed while here: a question rephrased in the turn that just re-asked one is that question again (one card,
+counted once per turn); shifts after an attack are named from the subject it left; "the real cost is 5 percent"
+has the subject "real cost" (a verb after a determiner is a noun); naming a speaker before they speak sticks.
+
+**Tests:** 293 passing (marks, operator cue and export over the WebSocket added). `npm run typecheck` clean.
+
+**Next:** step 8 — the bench report (including the held-out set) and the README.

@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import {
   assemblyai, claudeClient, clock, decodeAudio, deepgram, HAIKU, haikuTransport, HeuristicDetector, JevDetector, type JevDecision,
-  Listener, pace, scriptedProvider, SonnetResponder, TemplateResponder, type Clip, type Mode, type SpeakerRole, type SttProvider,
+  exportSession, Listener, pace, scriptedProvider, SonnetResponder, TemplateResponder, type Clip, type Mode, type SpeakerRole, type SttProvider,
 } from '@hepta/listen';
 
 loadEnv('.env');
@@ -102,8 +102,7 @@ clearInterval(ticker);
 
 mkdirSync('exports', { recursive: true });
 const out = join('exports', `listen-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-writeFileSync(out, JSON.stringify({ mode, backend: detector.name, stt: provider.name, responder: responder.name, source: file ?? clip?.id, speakers: listener.speakers.list(),
-  decisions: listener.decisions, insights: listener.insights, responses: listener.responses, threads: listener.memory.threads, questions: listener.memory.questions, claims: listener.memory.claims }, null, 1));
+writeFileSync(out, JSON.stringify(exportSession(listener, { stt: provider.name, responder: responder.name, source: file ?? clip?.id, speed }), null, 1));
 console.error(`\nsaved ${out}`);
 
 function line(d: JevDecision): string {

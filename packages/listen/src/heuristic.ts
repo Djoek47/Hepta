@@ -19,6 +19,7 @@ const VERBS = new Set(['build', 'builds', 'built', 'bring', 'brings', 'raise', '
   'reduce', 'reduced', 'double', 'doubled', 'halve', 'halved', 'stand', 'stands', 'sits', 'take', 'cost', 'costs', 'closing', 'going',
   'expect', 'feel', 'feels', 'leave', 'leaves', 'tried', 'try', 'clearing', 'bringing', 'helping', 'look', 'looked']);
 
+const DETERMINER = /^(the|a|an|its|our|their|his|her|my|your|this|that|real|total|net)$/;
 const COMMITMENT = /\b(will|would|going to|plan|plans|promise[ds]?|pledge[ds]?|target|commit(ted|ment)?|aim|by (19|20)\d\d)\b/i;
 const REPORTED = /\b(you|he|she|they|the [a-z]+) (said|claimed|told us|promised)\b/i;
 const FALLING = /\b(fell|fall|falls|dropped|drop|declined|down|cut|lower|reduced)\s+(by\s+)?(about\s+|around\s+|nearly\s+|almost\s+)?$/;
@@ -263,11 +264,15 @@ export class HeuristicDetector implements Detector {
     const voc = to === null ? /^([a-z][a-z ]{2,30}),/i.exec(text.trim())?.[1]?.toLowerCase() : undefined;
     const toName = voc && !/^(panel|everyone|all of you|both of you|so|and|but|well|now|okay|look|tonight)$/.test(voc) ? voc : undefined;
     const keys = [...new Set(contentStems(q))];
+    // "Minister, the question was about funding. Where does the money come from?": a question
+    // rephrased in the turn that just re-asked one is that question again.
+    const prev = st.turns[st.turns.length - 1];
+    const sameTurnReask = !reask && prev && prev.speaker === h.speaker && h.startMs - prev.endMs < 2500 && refersToQuestion(prev.text);
     // Asked again — by the same person or someone else — while still open.
-    const open = st.questions.filter((x) => x.status === 'open' && x.to !== h.speaker && (to === null || x.to === to));
+    const open = st.questions.filter((x) => (x.status === 'open' || x.status === 'dodged') && x.to !== h.speaker && (to === null || x.to === to));
     const repeat = open
       .map((x) => ({ x, o: Math.max(jaccard(keys, x.keys), keyOverlap(q, x.keys)) }))
-      .filter((y) => reask || y.o >= 0.25)
+      .filter((y) => reask || sameTurnReask || y.o >= 0.25)
       .sort((a, b) => b.o - a.o || b.x.askedMs - a.x.askedMs)[0];
     return { text: q, to, keys, ...(toName ? { toName } : {}), ...(repeat ? { repeatOf: repeat.x.id } : {}) };
   }
@@ -318,8 +323,9 @@ export class HeuristicDetector implements Detector {
         const year = nums.find((x) => x.year)?.value;
         const lowerClause = clause.toLowerCase();
         const idx = lowerClause.indexOf(n.raw.toLowerCase().split(' ')[0]!.replace(/[£$€]/, ''));
-        const before = words(lowerClause.slice(0, Math.max(0, idx)))
-          .filter((w) => contentStems(w).length > 0 && !VERBS.has(w));
+        // A verb-looking word after a determiner is a noun: "the real cost is 5 percent".
+        const pre = words(lowerClause.slice(0, Math.max(0, idx)));
+        const before = pre.filter((w, i) => contentStems(w).length > 0 && (!VERBS.has(w) || DETERMINER.test(pre[i - 1] ?? '') || DETERMINER.test(pre[i - 2] ?? '')));
         const after = words(lowerClause.slice(Math.max(0, idx)))
           .filter((w) => contentStems(w).length > 0 && !VERBS.has(w) && !/^\d/.test(w) && !/^(percent|cent|pounds|dollars|euros|billion|million|thousand)$/.test(w));
         const unitNoun = n.unit && !/[%£$€]/.test(n.unit) ? n.unit : undefined;

@@ -16,3 +16,4 @@ exports/
 .studio.mjs
 apps/studio/public/app.js
 .debug.mjs
+.e2e.mjs

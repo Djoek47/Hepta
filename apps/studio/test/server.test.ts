@@ -94,3 +94,28 @@ describe('the page-side downsampler', () => {
     expect(new Downsampler(48000).push(new Float32Array(300).fill(0.5))[0]).toBe(Math.round(0.5 * 32767));
   });
 });
+
+describe('tuning from the page', () => {
+  it('takes marks, cues Hepta by hand, and exports the whole session', async () => {
+    const s = await startStudio({ env: {}, publicDir: 'apps/studio/public', clipsDir: 'bench/clips', port: 0 });
+    close = s.close;
+    const c = client(s.port);
+    await c.opened;
+    c.ws.send(JSON.stringify({ type: 'start', input: 'script', clip: '02-panel-economy', speed: 400 }));
+    const d = await c.until((m) => m.type === 'decision' && (m.decision as { final: boolean }).final);
+    const id = (d.decision as { id: string }).id;
+    c.ws.send(JSON.stringify({ type: 'mark', target: id, on: 'decision', mark: 'false_flag', note: 'not a shift' }));
+    await c.until((m) => m.type === 'marked');
+    c.ws.send(JSON.stringify({ type: 'cue' }));
+    await c.until((m) => m.type === 'response' && (m.card as { status: string }).status === 'done');
+    c.ws.send(JSON.stringify({ type: 'export' }));
+    const ex = await c.until((m) => m.type === 'export');
+    const data = ex.data as { format: string; marks: { target: string; mark: string; note?: string }[]; responses: { ledger?: { kind: string }[] }[]; decisions: unknown[]; stats: { marks: Record<string, number> } };
+    expect(data.format).toBe('hepta-listen-session/1');
+    expect(data.marks).toEqual([expect.objectContaining({ target: id, mark: 'false_flag', note: 'not a shift' })]);
+    expect(data.stats.marks.false_flag).toBe(1);
+    expect(data.responses[0]!.ledger!.map((e) => e.kind)).toEqual(['goal', 'findings', 'plan', 'answer']);
+    expect(data.decisions.length).toBeGreaterThan(5);
+    c.ws.close();
+  });
+});

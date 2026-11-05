@@ -176,7 +176,8 @@ export class Listener {
     const decision: JevDecision = {
       id: `d${this.seq}`, heardId: heard.id, utteranceId: heard.utteranceId, final: heard.final,
       speaker, text: heard.text, atMs: heard.atMs,
-      topic: j.topic, shiftType: j.shiftType, shiftFrom: state.current.topic,
+      // After an attack, the subject it left is the one the conversation moves from.
+      topic: j.topic, shiftType: j.shiftType, shiftFrom: state.current.about ? state.current.resume?.topic ?? state.current.topic : state.current.topic,
       addressedToHepta: j.addressedToHepta, respondState: 'listen', confidence: j.confidence,
       latencyMs: 0, detectorMs, backend: this.opts.detector.name, provisional: !heard.final,
       boundary: heard.boundary, readings: j.readings, trigger: 'chunk',
@@ -380,9 +381,30 @@ export class Listener {
     });
   }
 
-  /** Everything, for the export: what was heard, decided, shown and said. */
+  /** The audio time of the latest chunk heard. */
   get audioMs(): number {
     return this.lastAudioMs;
+  }
+
+  /** The operator cues Hepta by hand, as a moderator would: say what you have, now. */
+  cue(): JevDecision {
+    const last = this.decisions[this.decisions.length - 1];
+    const d: JevDecision = {
+      id: `d${++this.seq}`, heardId: last?.heardId ?? 'operator', utteranceId: last?.utteranceId ?? 'operator', final: true, speaker: 'operator',
+      text: '(operator cue)', atMs: this.lastAudioMs, topic: last?.topic ?? null, shiftType: 'none', addressedToHepta: true,
+      respondState: 'respond', confidence: 1, latencyMs: 0, detectorMs: 0, backend: this.opts.detector.name, provisional: false,
+      boundary: true, readings: [], trigger: 'operator', why: 'the operator cued Hepta',
+    };
+    this.held = null;
+    this.decisions.push(d);
+    this.emit({ type: 'decision', decision: d });
+    this.respond(d, { key: `cue:${d.id}`, reason: 'question', urge: 1, say: 'operator cue' });
+    return d;
+  }
+
+  /** The operator settles a contradiction: the later figure stands. */
+  settle(claimId: string): boolean {
+    return !!this.memory.settle(claimId);
   }
 }
 
