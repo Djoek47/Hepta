@@ -295,4 +295,6 @@ export type JevDecision = {
   ignored?: IgnoreKind;
   /** Why the timing said what it said, for the operator. */
   why?: string;
+  /** 'turn-end': a response held for the end of the turn, fired when the speaker went quiet. */
+  trigger?: 'chunk' | 'turn-end';
 };

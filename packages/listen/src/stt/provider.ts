@@ -8,6 +8,8 @@ import type { SttChunk } from '../types.js';
 export type SttEvent =
   | { type: 'open' }
   | { type: 'chunk'; chunk: SttChunk }
+  /** Voice activity: someone started speaking (audio time). Arrives before their words do. */
+  | { type: 'speech'; atMs: number }
   | { type: 'error'; error: string }
   | { type: 'close'; reason?: string };
 

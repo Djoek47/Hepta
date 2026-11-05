@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import {
   assemblyai, claudeClient, clock, decodeAudio, deepgram, HAIKU, haikuTransport, HeuristicDetector, JevDetector, type JevDecision,
-  Listener, pace, scriptedProvider, type Clip, type Mode, type SpeakerRole, type SttProvider,
+  Listener, pace, scriptedProvider, SonnetResponder, TemplateResponder, type Clip, type Mode, type SpeakerRole, type SttProvider,
 } from '@hepta/listen';
 
 loadEnv('.env');
@@ -38,7 +38,13 @@ const backend = arg('--backend') ?? 'heuristic';
 const detector = backend === 'jev-haiku'
   ? new JevDetector({ name: 'jev-haiku', model: HAIKU, timeoutMs: 2500, transport: haikuTransport({ client: claudeClient() ?? die('jev-haiku needs ANTHROPIC_API_KEY') }) })
   : new HeuristicDetector();
-const listener = new Listener({ mode, detector, ...(clip?.evidence ? { evidence: clip.evidence } : {}), ...(clip?.stance ? { stance: clip.stance } : {}) });
+const claude = claudeClient();
+const responder = (arg('--responder') ?? (claude ? 'sonnet' : 'template')) === 'sonnet' && claude ? new SonnetResponder({ client: claude }) : new TemplateResponder();
+const listener = new Listener({ mode, detector, responder, ...(clip?.evidence ? { evidence: clip.evidence } : {}), ...(clip?.stance ? { stance: clip.stance } : {}) });
+// Silence is time passing too: audio time = the last chunk heard + wall time since, at playback speed.
+let lastHeard = { audioMs: 0, wallMs: Date.now() };
+listener.on((e) => { if (e.type === 'heard') lastHeard = { audioMs: e.heard.atMs, wallMs: Date.now() }; });
+const ticker = setInterval(() => { if (lastHeard.audioMs) void listener.tick(lastHeard.audioMs + (Date.now() - lastHeard.wallMs) * speed); }, 50);
 
 for (const spec of (arg('--names') ?? '').split(',').filter(Boolean)) {
   const [id, rest] = spec.split('=');
@@ -60,6 +66,8 @@ const firstSeen: string[] = [];
 for (const t of clip?.turns ?? []) if (!firstSeen.includes(t.speaker)) firstSeen.push(t.speaker);
 
 listener.on((e) => {
+  if (e.type === 'insight' && e.insight.status !== 'provisional') console.log(`        ${e.insight.status === 'retracted' ? '✗ retracted' : '▶'} ${e.insight.text}${e.insight.detail ? `\n          ${e.insight.detail}` : ''}`);
+  if (e.type === 'response' && e.card.status !== 'writing') console.log(`\n  HEPTA (${e.card.responder}, ${Math.round(e.card.firstMs ?? 0)} ms): ${e.card.text}\n`);
   if (e.type !== 'decision') return;
   const d = e.decision;
   if (!d.final && d.respondState !== 'respond' && !d.diversion) return;
@@ -77,7 +85,8 @@ session.on((e) => {
       if (info?.role === 'moderator' || info?.role === 'panelist' || info?.role === 'user') listener.name(listener.speakers.idFor(lab), info.name, info.role);
     }
     void listener.hear(e.chunk);
-  } else if (e.type === 'error') console.error(e.error);
+  } else if (e.type === 'speech') listener.speechStarted(e.atMs);
+  else if (e.type === 'error') console.error(e.error);
 });
 
 if (file) {
@@ -87,11 +96,14 @@ if (file) {
   await pace(pcm, (f) => session.send(f), { speed });
 }
 await session.finish();
+await listener.tick(listener.audioMs + 5000);
 await new Promise((r) => setTimeout(r, 200));
+clearInterval(ticker);
 
 mkdirSync('exports', { recursive: true });
 const out = join('exports', `listen-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-writeFileSync(out, JSON.stringify({ mode, backend: detector.name, stt: provider.name, source: file ?? clip?.id, speakers: listener.speakers.list(), decisions: listener.decisions }, null, 1));
+writeFileSync(out, JSON.stringify({ mode, backend: detector.name, stt: provider.name, responder: responder.name, source: file ?? clip?.id, speakers: listener.speakers.list(),
+  decisions: listener.decisions, insights: listener.insights, responses: listener.responses, threads: listener.memory.threads, questions: listener.memory.questions, claims: listener.memory.claims }, null, 1));
 console.error(`\nsaved ${out}`);
 
 function line(d: JevDecision): string {

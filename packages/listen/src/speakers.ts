@@ -33,7 +33,8 @@ export class SpeakerTracker {
     if (!id) {
       id = `S${this.ids.size + 1}`;
       this.ids.set(label, id);
-      this.info.set(id, { id });
+      // An operator may have named this speaker before they spoke: keep it.
+      if (!this.info.has(id)) this.info.set(id, { id });
     }
     return id;
   }

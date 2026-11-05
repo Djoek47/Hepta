@@ -214,6 +214,14 @@ export function scriptedProvider(clip: Clip, opts: SimOptions & { speed?: number
       const t0 = sim.chunks[0]?.chunk.heardToMs ?? 0;
       queueMicrotask(() => {
         ev.emit({ type: 'open' });
+        // Voice activity, as a recognizer's VAD reports it: when each utterance starts, before its words.
+        const started = new Set<string>();
+        for (const sc of sim.chunks) {
+          if (started.has(sc.chunk.utteranceId)) continue;
+          started.add(sc.chunk.utteranceId);
+          const at = sc.chunk.startMs;
+          timers.push(setTimeout(() => { if (!closed) ev.emit({ type: 'speech', atMs: at }); }, Math.max(0, (at - t0) / speed)));
+        }
         sim.chunks.forEach((sc, i) => {
           timers.push(setTimeout(() => {
             if (closed) return;

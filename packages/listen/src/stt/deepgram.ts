@@ -70,6 +70,8 @@ export function deepgram(o: DeepgramOptions): SttProvider {
           }));
           const heardTo = Math.round(((r.start ?? 0) + (r.duration ?? 0)) * 1000);
           asm.segment(words, !!r.is_final, !!r.speech_final, heardTo);
+        } else if (m.type === 'SpeechStarted') {
+          ev.emit({ type: 'speech', atMs: Math.round(((m as { timestamp?: number }).timestamp ?? 0) * 1000) });
         } else if (m.type === 'UtteranceEnd') {
           const e = m as { last_word_end?: number };
           asm.end(Math.round((e.last_word_end ?? 0) * 1000) + (o.utteranceEndMs ?? 1000));

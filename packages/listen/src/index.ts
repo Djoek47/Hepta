@@ -16,3 +16,5 @@ export * from './stt/index.js';
 export * from './audio.js';
 export * from './insights.js';
 export * from './threads.js';
+export * from './timing.js';
+export * from './respond.js';

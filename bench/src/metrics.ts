@@ -144,7 +144,41 @@ export function score(run: ClipRun, m: Metrics = emptyMetrics()): Metrics {
   for (const q of calledDodged) if (!wantDodged.has(q)) { m.dodged.fp++; m.misses.push({ clip: clip.id, turn: q, what: 'dodge false', detail: q }); }
 
   scoreTiming(run, m);
+  scoreEarly(run, m);
+  for (const r of run.listener?.responses ?? []) if (r.firstMs !== undefined) m.responseMs.push(r.firstMs);
   return m;
+}
+
+/**
+ * Cards shown on half a sentence: did the labels bear them out, and how early
+ * were they? A provisional card is right if its turn carries that diversion
+ * (or, for a contradiction, that kind of contradiction).
+ */
+function scoreEarly(run: ClipRun, m: Metrics): void {
+  const { clip, steps, listener } = run;
+  const turnOf = new Map<string, string>();
+  const lastAt = new Map<string, number>();
+  for (const s of steps) {
+    turnOf.set(s.d.utteranceId, s.sc.turnId);
+    if (s.d.final) lastAt.set(s.d.utteranceId, s.d.atMs);
+  }
+  const turns = new Map(clip.turns.map((t) => [t.id, t]));
+  for (const i of listener?.insights ?? []) {
+    if (i.shownAtMs === undefined) continue;
+    m.early.shown++;
+    if (i.status === 'confirmed') m.early.confirmed++;
+    if (i.status === 'retracted') m.early.retracted++;
+    const t = turns.get(turnOf.get(i.utteranceId) ?? '');
+    const types = [...(t?.diversion ?? []), ...(t?.contradicts && t.contradicts.kind !== 'evidence' ? [t.contradicts.kind] : [])] as string[];
+    if (i.type && types.includes(i.type)) {
+      m.early.right++;
+      const end = lastAt.get(i.utteranceId);
+      if (end !== undefined) m.early.leadMs.push(end - i.shownAtMs);
+    } else if (i.status === 'retracted' && !(i.type && types.includes(i.type))) {
+      // Taken back, and rightly: the labels did not bear it out. Counted as shown, not as right.
+    }
+    if (i.type && !types.includes(i.type)) m.misses.push({ clip: clip.id, turn: t?.id ?? '?', what: `early card ${i.status}`, detail: `${i.type} on "${i.quotes[i.quotes.length - 1]?.text ?? ''}"` });
+  }
 }
 
 /** When Hepta took the floor, against when the labels say it should have. */

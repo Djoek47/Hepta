@@ -8,13 +8,14 @@ import {
   Listener, type Clip, type EvidenceItem, type JevDecision, type Mode, type SpeakerRole, type StanceSeed,
   type SttProvider, type SttSession, type HaikuTiming,
 } from '@hepta/listen';
-import { detectorFor, scriptedFor, sttFor, type Env } from './config.js';
+import { detectorFor, responderFor, scriptedFor, sttFor, type Env } from './config.js';
 
 export type StartMessage = {
   type: 'start';
   input: 'mic' | 'file' | 'url' | 'script';
   mode?: Mode;
   backend?: 'heuristic' | 'jev-haiku';
+  responder?: 'sonnet' | 'template';
   stt?: 'deepgram' | 'assemblyai';
   clip?: string;
   speed?: number;
@@ -26,13 +27,17 @@ export type StartMessage = {
 export type ClientMessage =
   | StartMessage
   | { type: 'stop' }
-  | { type: 'name'; speaker: string; name?: string; role?: SpeakerRole };
+  | { type: 'name'; speaker: string; name?: string; role?: SpeakerRole }
+  | { type: 'speaking'; on: boolean };
 
 export type Send = (msg: Record<string, unknown>) => void;
 
 export class Session {
   listener: Listener | null = null;
   private stt: SttSession | null = null;
+  /** Audio time of the last chunk, and when it arrived: the clock a held answer waits on. */
+  private heardTo = { audioMs: 0, wallMs: 0, speed: 1 };
+  private ticker: ReturnType<typeof setInterval> | null = null;
   private clip: Clip | null = null;
   private readonly timings: HaikuTiming[] = [];
 
@@ -48,6 +53,7 @@ export class Session {
   async handle(msg: ClientMessage): Promise<void> {
     if (msg.type === 'start') return this.start(msg);
     if (msg.type === 'stop') return this.stop();
+    if (msg.type === 'speaking') { this.listener?.setSpeaking(msg.on); return; }
     if (msg.type === 'name' && this.listener) {
       this.listener.name(msg.speaker, msg.name, msg.role);
       this.send({ type: 'speakers', speakers: this.listener.speakers.list() });
@@ -67,28 +73,38 @@ export class Session {
       const evidence = m.evidence ?? this.clip?.evidence;
       const stance = m.stance ?? this.clip?.stance;
       const listener = new Listener({
-        mode, detector: detectorFor(m.backend, this.env, (t) => this.timings.push(t)),
+        mode, detector: detectorFor(m.backend, this.env, (t) => this.timings.push(t)), responder: responderFor(m.responder, this.env),
         ...(evidence ? { evidence } : {}), ...(stance ? { stance } : {}),
       });
       this.listener = listener;
       listener.on((e) => {
         if (e.type === 'heard') this.send({ type: 'heard', heard: e.heard });
         else if (e.type === 'insight') this.send({ type: 'insight', insight: e.insight });
+        else if (e.type === 'response') this.send({ type: 'response', card: { ...e.card, ledger: undefined } });
+        else if (e.type === 'floor') this.send({ type: 'floor', floor: e.floor, why: e.why });
         else this.send({ type: 'decision', decision: e.decision, speakers: listener.speakers.list(), threads: listener.memory.threads, questions: listener.memory.questions });
       });
       const provider = this.providerFor(m, this.clip);
       const stt = await provider.open({ sampleRate: m.sampleRate ?? 16_000 });
       this.stt = stt;
       const named = new Set<string>();
+      this.heardTo = { audioMs: 0, wallMs: Date.now(), speed: m.input === 'script' ? m.speed ?? 1 : 1 };
+      // Nobody speaking is time passing too: a held answer is given once the speaker has been quiet.
+      this.ticker = setInterval(() => {
+        const now = this.heardTo.audioMs + (Date.now() - this.heardTo.wallMs) * this.heardTo.speed;
+        if (this.heardTo.audioMs > 0) void listener.tick(now);
+      }, 100);
       stt.on((e) => {
         if (e.type === 'chunk') {
+          this.heardTo = { ...this.heardTo, audioMs: e.chunk.heardToMs, wallMs: Date.now() };
           if (this.clip) this.nameFromClip(listener, e.chunk.words.map((w) => w.speaker), named);
           listener.hear(e.chunk).catch((err: unknown) => this.send({ type: 'error', message: String((err as Error)?.message ?? err) }));
-        } else if (e.type === 'error') this.send({ type: 'error', message: e.error });
+        } else if (e.type === 'speech') listener.speechStarted(e.atMs);
+        else if (e.type === 'error') this.send({ type: 'error', message: e.error });
         else if (e.type === 'open') this.send({ type: 'status', stt: 'open', provider: provider.name });
         else if (e.type === 'close') this.send({ type: 'status', stt: 'closed', provider: provider.name, ...(e.reason ? { reason: e.reason } : {}) });
       });
-      this.send({ type: 'started', mode, input: m.input, backend: listener.detector.name, stt: provider.name, ...(this.clip ? { clip: { id: this.clip.id, title: this.clip.title } } : {}) });
+      this.send({ type: 'started', mode, input: m.input, backend: listener.detector.name, stt: provider.name, responder: responderFor(m.responder, this.env).name, ...(this.clip ? { clip: { id: this.clip.id, title: this.clip.title } } : {}) });
     } catch (err) {
       this.send({ type: 'error', message: String((err as Error)?.message ?? err) });
     }
@@ -114,6 +130,8 @@ export class Session {
   }
 
   async stop(): Promise<void> {
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
     const stt = this.stt;
     this.stt = null;
     if (stt) {

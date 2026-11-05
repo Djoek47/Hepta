@@ -8,7 +8,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { claudeClient, HAIKU, haikuTransport, HeuristicDetector, JevDetector, type HaikuTiming } from '@hepta/listen';
+import { claudeClient, HAIKU, haikuTransport, HeuristicDetector, JevDetector, SonnetResponder, TemplateResponder, type HaikuTiming } from '@hepta/listen';
 import type { Clip } from './src/clip.js';
 import { emptyMetrics, merge, score } from './src/metrics.js';
 import { formatMarkdown, formatReport, type BackendResult } from './src/report.js';
@@ -36,6 +36,9 @@ const BACKENDS: Record<string, Backend> = {
   },
 };
 
+// Response cards: Sonnet when there is a key (that is what "time to card" should measure), else the template.
+const responderName = arg('--responder') ?? (client ? 'sonnet' : 'template');
+const responder = responderName === 'sonnet' && client ? new SonnetResponder({ client }) : new TemplateResponder();
 const wanted = (arg('--backends') ?? 'heuristic,jev-haiku').split(',');
 const results: BackendResult[] = [];
 for (const name of wanted) {
@@ -49,7 +52,7 @@ for (const name of wanted) {
   const perClip: BackendResult['perClip'] = [];
   for (const clip of clips) {
     const run = await runClip(clip, b, {
-      names: !flag('--no-names'),
+      names: !flag('--no-names'), responder,
       ...(arg('--onset-lag') ? { onsetLag: Number(arg('--onset-lag')) } : {}),
       ...(arg('--flicker') ? { flicker: Number(arg('--flicker')) } : {}),
       ...(arg('--seed') ? { seed: Number(arg('--seed')) } : {}),
@@ -66,7 +69,7 @@ for (const name of wanted) {
 }
 
 const turns = clips.reduce((a, c) => a + c.turns.length, 0);
-const title = `HEPTA LISTEN — bench${set === 'holdout' ? ' (HELD OUT)' : ''}: ${clips.length} clips, ${turns} turns`;
+const title = `HEPTA LISTEN — bench${set === 'holdout' ? ' (HELD OUT)' : ''}: ${clips.length} clips, ${turns} turns · response cards by ${responder.name}`;
 console.log('\n' + formatReport(results, title));
 if (flag('--misses')) {
   for (const r of results) {

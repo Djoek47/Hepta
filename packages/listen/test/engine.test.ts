@@ -25,12 +25,17 @@ describe('the listener', () => {
     expect(out.map((d) => d.text)).toEqual(texts);
   });
 
-  it('answers when addressed, at the end of the sentence, and not before', async () => {
+  it('answers when addressed once the turn has ended, and not before', async () => {
     const l = new Listener({ mode: 'panel', detector: new HeuristicDetector() });
     const partial = await l.hear(chunk('Hepta, anything to', { final: false, utteranceId: 'u9' }));
     const final = await l.hear(chunk('Hepta, anything to flag?', { utteranceId: 'u9' }));
-    expect(partial.respondState).not.toBe('respond');
-    expect(final.respondState).toBe('respond');
+    expect(partial.respondState).toBe('ready');
+    expect(final.respondState).toBe('ready');
+    expect(await l.tick(final.atMs)).toBeNull(); // not quiet long enough yet
+    const fired = await l.tick(final.atMs + 1000);
+    expect(fired).toMatchObject({ respondState: 'respond', trigger: 'turn-end', utteranceId: 'u9' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(l.responses[0]).toMatchObject({ status: 'done', reason: 'cue', responder: 'template' });
   });
 });
 

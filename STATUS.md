@@ -224,3 +224,57 @@ answer, contradictions kept beside, self-correction settles, revisions, one brea
 
 **Next:** step 6 — the timing state machine (listen / note / ready / respond) on the ported Lines rules, readings
 on fragments with provisional cards, and response cards written by Claude Sonnet.
+
+## Step 6 — timing state machine, fragments, response cards ✅
+
+**The four states** (`timing.ts`), decided on every chunk: **listen** · **note** (it is on a card; nothing to say)
+· **ready** (a point is waiting — for a clause boundary, the end of the turn, or a cue) · **respond**.
+
+- **Conversation and debater run on the ported Lines rules, unchanged.** Hepta's points become Lines threads
+  (a changed figure, evidence against its stance, a question put to it) and Lines decides: cut in only at a clause
+  boundary unless urgent; push once per disagreement; concede below 0.4 on a real reason; a point queued on half
+  a sentence is rechecked on the whole. No listener urge reaches Lines' urgent level (capped at 0.89): **Hepta
+  never takes the floor mid-clause.** A clause boundary comes from the recognizer: punctuation, a joint word, a
+  pause in the word timings (the `Heard.boundary` seam added in step 2).
+- **Panel:** Hepta never cuts in. Points wait (READY) until the moderator cues it or someone puts a question to
+  it, or challenges it by name; the cue gets all waiting points at once, and they are cleared.
+- **Debater:** evidence against the stance cuts in at the next boundary, once per disagreement (one Lines stance
+  thread per evidence item). What the other side says next is a reply: a reason lowers confidence by 0.35;
+  below 0.4 it concedes, and the next card says so. The sentence that earned the push is not a reply to it.
+- **The end of a turn, not of a sentence.** A recognizer's final marks a pause; people go on after pauses. An
+  answer held for the end of the turn waits until the speaker has been quiet `turnEndMs` (700 ms), moves with
+  each further sentence, and waits while voice activity says someone is speaking whose words have not arrived
+  (Deepgram `SpeechStarted`; the scripted recognizer emits the same). Someone else speaking ends the turn.
+- **The floor while Hepta speaks** (TTS on): a nod keeps it going, "wait"/"no"/a sentence makes it stop (Lines).
+
+**Fragments.** Each partial carries up to three readings. When one clearly leads (p ≥ 0.55, 0.15 ahead) a
+**provisional** card is shown at once; on the whole sentence it is **confirmed** if it still holds, or
+**retracted** — "What I can tell you is that it will be paid for by…" opens like a deflection and is an answer.
+
+**Response cards** (`respond.ts`), written round the **ported pyramid**: the aggregator reads (the record's
+points and open questions, the evidence pack), the orchestrator is the writer and gets copies only, the
+congregator records goal → findings → plan → answer, and that ledger goes into the export. Writers:
+- **Claude Sonnet 5.5** (`claude-sonnet-5-5`): streamed, thinking off (`between_tools`), low effort, cached
+  system prompt (~700 tokens, above the 512 minimum), server-side refusal fallback (`fallbacks: "default"`).
+  Short, on-screen, citing who said what and when. Used when `ANTHROPIC_API_KEY` is set.
+- **Template** (no key, or when Sonnet fails — the ledger says so): reads the cards plainly; to a question in
+  conversation it reads back the person's own figures with times and asks which changed figure stands.
+
+| scripted set (dev) | step 5 | step 6 |
+| --- | --- | --- |
+| responses on time | 12/16 (baseline: answer on the sentence's final) | **15/16** |
+| spoke out of turn / too early | 0 / 1 | **0 / 0** |
+| **wrong interruptions** | 0 | **0** |
+| early insights right | — | **8/8**, all confirmed, shown 2.7 s before the sentence ended (median) |
+| response card (template) median / p95 | — | 0.11 ms / 0.88 ms |
+
+The one response missed is the semantic contradiction from step 5 (no figure to compare): no point, no cut-in.
+**Sonnet's time to card is not measured here** — no key in this session. `npm run bench` uses Sonnet
+automatically when the key is in `.env` and reports first-text and full-card latency against the 1.5 s target.
+
+**Tests:** 292 passing (11 new: cut-in at a boundary only, the end-of-turn wait, voice activity, panel cue with
+waiting points, debater push-once and concession, the floor while speaking, provisional confirmed and
+retracted, the pyramid ledger, writer fallback, the Sonnet request).
+
+**Next:** step 7 — the operator UI: modes, inputs, live transcript with Jev tags, threads, cards, the response
+card with READY/RESPOND, TTS, tuning marks and export.
